@@ -1,0 +1,9 @@
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+src/CMakeFiles/
+src/Makefile
+src/bordeaux-mqtt-bridge
+src/cmake_install.cmake
+
