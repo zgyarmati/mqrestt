@@ -11,7 +11,7 @@
 
 #include "iniparser/iniparser.h"
 
-#define INISECTION "bordeaux-mqtt-bridge:"
+#define INISECTION PACKAGE_NAME":"
 
 
 /*
@@ -45,6 +45,8 @@ init_config(const char*filepath){
     //MQTT
     retval->mqtt_broker_host = iniparser_getstring(ini,INISECTION"mqtt_broker_host","127.0.0.1");
     retval->mqtt_broker_port = iniparser_getint(ini,INISECTION"mqtt_broker_port",1883);
+
+    retval->mqtt_topic = iniparser_getstring(ini,INISECTION"mqtt_topic","facility");
     return retval;
 }
 

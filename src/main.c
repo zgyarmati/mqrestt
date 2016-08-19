@@ -23,12 +23,14 @@
 #include "configuration.h"
 #include "logging.h"
 //#include <config.h>
-//
 #include <mosquitto.h>
-static int running = 0;
+
+
+
+static int  running = 0;
 static char *conf_file_name = PACKAGE_NAME".ini";
 static char *pid_file = "/var/lock/"PACKAGE_NAME;
-static int pid_fd = -1;
+static int  pid_fd = -1;
 static char *app_name = PACKAGE_NAME;
 
 
@@ -101,6 +103,7 @@ static void daemonize()
         exit(EXIT_SUCCESS);
     }
 
+
     /* Set new file permissions */
     umask(0);
 
@@ -156,15 +159,33 @@ void print_help(void)
 
 
 int
-rest_send_online(Configuration *conf, const char *id)
+rest_post(Configuration *conf, const char *url, const char *payload )
 {
     CURL *curl;
     CURLcode res;
     int retval = 0;
+    const int len = strlen(config->webservice_baseurl);
+    DEBUG("len url: %d", strlen(url));
+    #define URL_MAX_SIZE 256
+    char full_url[URL_MAX_SIZE];
+    strncpy(full_url,config->webservice_baseurl, URL_MAX_SIZE);
+    if(full_url[len-1] != '/'){
+        DEBUG("Need to append a '/'");
+        full_url[len] = '/';
+        full_url[len + 1] = '\0';
+    }
+    strncat(full_url,url,URL_MAX_SIZE-len-1);
+    INFO("FULL URL: %s", full_url);
+
     curl = curl_easy_init();
     if(curl) {
-        curl_easy_setopt(curl, CURLOPT_URL, "http://127.0.0.1:8000/oscapi/324324/online");
-        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
+        curl_easy_setopt(curl, CURLOPT_URL, full_url);
+        if (payload == NULL){
+            curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
+        }
+        else {
+            curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload);
+        }
         res = curl_easy_perform(curl);
         if(res != CURLE_OK){
             ERROR("curl_easy_perform() failed: %s", curl_easy_strerror(res));
@@ -175,42 +196,22 @@ rest_send_online(Configuration *conf, const char *id)
     return retval;
 }
 
+
 void
 mqtt_cb_msg(struct mosquitto *mosq, void *userdata,
                   const struct mosquitto_message *msg)
 {
     char **topics;
     int topic_count;
-    if(msg->payloadlen){
-        DEBUG("TOPIC: %s, PAYLOAD: %s", msg->topic, msg->payload);
-    }
-    else {
-        WARNING("Received msg without payload on topic: %s\n", msg->topic);
-        return;
-    }
+    //tailoring the url
+    char *url = msg->topic + strlen(config->mqtt_topic) + 1; // +1 the '/'
 
-    if(mosquitto_sub_topic_tokenise(msg->topic, &topics, &topic_count)){
-        FATAL("Failed to allocate memory");
-        return;
-    }
-
-    if (topic_count < 2 || !topics[1]){
-        ERROR("Missing sub-topic!");
-        mosquitto_sub_topic_tokens_free(&topics, topic_count);
-        return;
-    }
-    // looking up the handler of the topic
-    if (!strncmp(topics[1],"online",16)){
-        INFO("Client %s got online", msg->payload);
-//    rest_send_online(config, "43534");
-    }
-    else if (!strncmp(topics[1],"offline",16)){
-        INFO("Client %s went offline", msg->payload);
-    }
-    else {
-        WARNING("Unkown sub-topic received: %s", topics[1]);
-    }
     mosquitto_sub_topic_tokens_free(&topics, topic_count);
+    DEBUG("Received msg on topic: %s\n", msg->topic);
+    if(msg->payload != NULL){
+        DEBUG("Payload: %s", msg->payload);
+    }
+    rest_post(config, url, msg->payload);
 }
 
 
@@ -231,11 +232,10 @@ mqtt_cb_subscribe(struct mosquitto *mosq, void *userdata, int mid,
 {
     int i;
 
-    printf("Subscribed (mid: %d): %d", mid, granted_qos[0]);
+    INFO("Subscribed (mid: %d): %d", mid, granted_qos[0]);
     for(i=1; i<qos_count; i++){
-        printf(", %d", granted_qos[i]);
+        INFO("\t %d", granted_qos[i]);
     }
-    printf("\n");
 }
 
 void
@@ -315,6 +315,7 @@ int main(int argc, char *argv[])
     INFO("bordeaux-eventdispatcher started, pid: %d", getpid());
     INFO("bordeaux-eventdispatcher version: %s", "ver");
     INFO("libmosquitto version: %d", mosquitto_lib_version(NULL, NULL, NULL));
+//    rest_post(config,"3213213/online", "");
 
     int keepalive = 60;
     bool clean_session = true;
