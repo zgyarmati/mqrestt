@@ -313,7 +313,7 @@ int main(int argc, char *argv[])
     ret = log_init(config->loglevel, config->logtarget, config->logfile,
               config->logfacility, 0);
     INFO(PACKAGE_NAME" started, pid: %d", getpid());
-    INFO(PACKAGE_NAME" version: %s", "ver");
+    INFO(PACKAGE_NAME" version: %s", PACKAGE_VERSION);
     INFO("libmosquitto version: %d", mosquitto_lib_version(NULL, NULL, NULL));
 
     int keepalive = 60;
