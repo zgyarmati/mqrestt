@@ -1,0 +1,48 @@
+mqrestt(1)
+============
+:doctype: manpage
+
+
+NAME
+----
+mqrestt - daemon to translate MQTT messages to REST POST calls
+
+
+SYNOPSIS
+--------
+*mqrestt* ['OPTIONS']
+
+
+DESCRIPTION
+-----------
+
+ translate received MQTT messages into REST POST calls
+
+
+
+OPTIONS
+-------
+-c --configfile /path/to/configfile ::
+    Set the path to the configfile. Default is /etc/mqrestt.ini
+
+-h --help::
+    Print help text
+
+-v --version::
+    print version info
+
+
+
+CONFIGURATION
+-------------
+    See the commented /etc/mqrestt.ini
+
+AUTHORS
+-------
+Zoltan Gyarmati <mr.zoltan.gyarmati@gmail.com>
+
+
+COPYING
+-------
+Copyright (c) 2016 Zoltan Gyarmati (https://zgyarmati.de)
+LGPL

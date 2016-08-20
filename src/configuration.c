@@ -9,6 +9,7 @@
 #include <string.h>
 #include <signal.h>
 
+#include <config.h>
 #include "iniparser/iniparser.h"
 
 #define INISECTION PACKAGE_NAME":"

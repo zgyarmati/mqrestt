@@ -19,7 +19,7 @@
 
 #include <curl/curl.h>
 
-
+#include <config.h>
 #include "configuration.h"
 #include "logging.h"
 //#include <config.h>
@@ -312,10 +312,9 @@ int main(int argc, char *argv[])
     }
     ret = log_init(config->loglevel, config->logtarget, config->logfile,
               config->logfacility, 0);
-    INFO("bordeaux-eventdispatcher started, pid: %d", getpid());
-    INFO("bordeaux-eventdispatcher version: %s", "ver");
+    INFO(PACKAGE_NAME" started, pid: %d", getpid());
+    INFO(PACKAGE_NAME" version: %s", "ver");
     INFO("libmosquitto version: %d", mosquitto_lib_version(NULL, NULL, NULL));
-//    rest_post(config,"3213213/online", "");
 
     int keepalive = 60;
     bool clean_session = true;
