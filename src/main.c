@@ -147,14 +147,29 @@ static void daemonize()
 /**
  * \brief Print help for this application
  */
-void print_help(void)
+void
+print_help(void)
 {
-    printf("\nUsage: %s [OPTIONS]\n\n", app_name);
-    printf("Options:\n");
-    printf("   -h --help                 Print this help\n");
-    printf("   -c --configfile filename  Read configuration from the file\n");
-    printf("   -d --daemon               Daemonize this application\n");
-    printf("\n");
+    fprintf(stderr,"\nUsage: %s [OPTIONS]\n\n", app_name);
+    fprintf(stderr,"Options:\n");
+    fprintf(stderr,"   -h --help                 Print this help\n");
+    fprintf(stderr,"   -v --version              Print version info\n");
+    fprintf(stderr,"   -c --configfile filename  Read configuration from the file\n");
+    fprintf(stderr,"   -d --daemon               Daemonize this application\n");
+    fprintf(stderr,"\n");
+}
+
+void
+print_version(void)
+{
+    int major;
+    int minor;
+    int revision;
+    fprintf(stderr,PACKAGE_NAME" version: %s\n", PACKAGE_VERSION);
+    int mosquitto_ver = mosquitto_lib_version(&major,&minor,&revision);
+    fprintf(stderr, "Libmosquitto version: %d.%d-%d (%d)\n",
+            major, minor, revision, mosquitto_ver);
+    fprintf(stderr, "Libcurl version info: %s\n", curl_version());
 }
 
 
@@ -196,18 +211,18 @@ rest_post(Configuration *conf, const char *url, const char *payload )
     return retval;
 }
 
-
+/* Called when a message arrives to the subscribed topic,
+ * we just removing the lead topic and turn it into an URL and calling
+ * it, payload attached
+ */
 void
 mqtt_cb_msg(struct mosquitto *mosq, void *userdata,
                   const struct mosquitto_message *msg)
 {
-    char **topics;
-    int topic_count;
     //tailoring the url
     char *url = msg->topic + strlen(config->mqtt_topic) + 1; // +1 the '/'
-
-    mosquitto_sub_topic_tokens_free(&topics, topic_count);
     DEBUG("Received msg on topic: %s\n", msg->topic);
+    //calling the URL with the payload
     if(msg->payload != NULL){
         DEBUG("Payload: %s", msg->payload);
     }
@@ -218,7 +233,6 @@ mqtt_cb_msg(struct mosquitto *mosq, void *userdata,
 void
 mqtt_cb_connect(struct mosquitto *mosq, void *userdata, int result)
 {
-    int i;
     if(!result){
         mosquitto_subscribe(mosq, NULL, "facility/#", 2);
     }else{
@@ -230,10 +244,8 @@ void
 mqtt_cb_subscribe(struct mosquitto *mosq, void *userdata, int mid,
                         int qos_count, const int *granted_qos)
 {
-    int i;
-
     INFO("Subscribed (mid: %d): %d", mid, granted_qos[0]);
-    for(i=1; i<qos_count; i++){
+    for(int i=1; i<qos_count; i++){
         INFO("\t %d", granted_qos[i]);
     }
 }
@@ -244,7 +256,10 @@ mqtt_cb_disconnect(struct mosquitto *mosq, void *userdat, int rc)
     WARNING("MQTT disconnect, error: %d: %s",rc, mosquitto_strerror(rc));
 }
 
-//MOSQ_LOG_INFO MOSQ_LOG_NOTICE MOSQ_LOG_WARNING MOSQ_LOG_ERR MOSQ_LOG_DEBUG
+
+/* transpose libmosquitto log messages into ours
+ * MOSQ_LOG_INFO MOSQ_LOG_NOTICE MOSQ_LOG_WARNING MOSQ_LOG_ERR MOSQ_LOG_DEBUG
+ */
 void
 mqtt_cb_log(struct mosquitto *mosq, void *userdata,
                   int level, const char *str)
@@ -273,16 +288,17 @@ int main(int argc, char *argv[])
     static struct option long_options[] = {
         {"configfile", required_argument, 0, 'c'},
         {"help", no_argument, 0, 'h'},
+        {"version", no_argument, 0, 'v'},
         {"daemon", no_argument, 0, 'd'},
         {NULL, 0, 0, 0}
     };
-    int value, option_index = 0, ret;
+    int value, option_index = 0;
     int start_daemonized = 0;
 
     app_name = argv[0];
 
     /* Try to process all command line arguments */
-    while( (value = getopt_long(argc, argv, "c:dh", long_options, &option_index)) != -1) {
+    while( (value = getopt_long(argc, argv, "c:dhv", long_options, &option_index)) != -1) {
         switch(value) {
             case 'c':
                 conf_file_name = strdup(optarg);
@@ -292,6 +308,9 @@ int main(int argc, char *argv[])
                 break;
             case 'h':
                 print_help();
+                return EXIT_SUCCESS;
+            case 'v':
+                print_version();
                 return EXIT_SUCCESS;
             case '?':
                 print_help();
@@ -310,11 +329,12 @@ int main(int argc, char *argv[])
         fprintf(stderr, "CONFIG ERROR, EXITING!\n");
         exit(EXIT_FAILURE);
     }
-    ret = log_init(config->loglevel, config->logtarget, config->logfile,
-              config->logfacility, 0);
+    if(0 != log_init(config->loglevel, config->logtarget, config->logfile,
+              config->logfacility, 0)){
+        fprintf(stderr, "Failed to init logging, exiting\n");
+        return EXIT_FAILURE;
+    }
     INFO(PACKAGE_NAME" started, pid: %d", getpid());
-    INFO(PACKAGE_NAME" version: %s", PACKAGE_VERSION);
-    INFO("libmosquitto version: %d", mosquitto_lib_version(NULL, NULL, NULL));
 
     int keepalive = 60;
     bool clean_session = true;

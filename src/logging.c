@@ -93,7 +93,7 @@ int log_init(const char *cloglevel, const char *target, const char *filepath,
     else if (!strcmp(target,"syslog"))
     #ifndef WIN32
     {
-        openlog("timezoned", LOG_CONS | LOG_PID | LOG_NDELAY,
+        openlog("mqresst", LOG_CONS | LOG_PID | LOG_NDELAY,
                 log_lookup_syslog_facility(facility));
         log_print = log_print_syslog;
     }
