@@ -1,5 +1,8 @@
 #include "mqtt_curl.h"
+#include <string.h>
+#include <unistd.h>
 #include <curl/curl.h>
+
 #include <config.h>
 #include "logging.h"
 
@@ -118,7 +121,6 @@ mqtt_cb_log(struct mosquitto *mosq, void *userdata,
 struct mosquitto*
 mqtt_curl_init(Configuration *config)
 {
-    int keepalive = 60;
     bool clean_session = true;
     struct mosquitto *mosq = NULL;
 
@@ -135,21 +137,16 @@ mqtt_curl_init(Configuration *config)
     mosquitto_disconnect_callback_set(mosq, mqtt_cb_disconnect);
 
     int running = 1; // changed from signal handler
-//    signal(SIGINT, handle_signal);
     while(running){ //we try until we succeed, or we killed
         if(mosquitto_connect(mosq, config->mqtt_broker_host,
-                                config->mqtt_broker_port, keepalive)){
+                             config->mqtt_broker_port, config->mqtt_keepalive)){
             ERROR("Unable to connect, host: %s, port: %d\n",
-                    config->mqtt_broker_host, config->mqtt_broker_port);
+                   config->mqtt_broker_host, config->mqtt_broker_port);
             sleep(2);
             continue;
         }
         break;
     }
     return mosq;
-
-    /* Reset signal handling to default behavior */
-//    signal(SIGINT, SIG_DFL);
-
 }
 

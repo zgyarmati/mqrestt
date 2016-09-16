@@ -38,6 +38,7 @@ typedef struct
     const char* mqtt_broker_host;
     int         mqtt_broker_port;
     const char* mqtt_topic;
+    int         mqtt_keepalive;
 
 } Configuration;
 

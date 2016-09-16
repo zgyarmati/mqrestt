@@ -239,6 +239,7 @@ int main(int argc, char *argv[])
     //pfd[0] is for the mosquitto socket, pfd[1] is for the mq file descriptor
     struct pollfd pfd[2];
     const int nfds = sizeof(pfd)/sizeof(struct pollfd);
+    const int poll_timeout = config->mqtt_keepalive/2*1000;
 
     while (running) {
         int mosq_fd = mosquitto_socket(mosq); //this might change?
@@ -248,7 +249,7 @@ int main(int argc, char *argv[])
             printf("Set POLLOUT\n");
             pfd[0].events |= POLLOUT;
         }
-        if(poll(pfd, nfds, 60/2 * 1000) < 0) {
+        if(poll(pfd, nfds, poll_timeout) < 0) {
             printf("Poll() failed with <%s>, exiting",strerror(errno));
             return EXIT_FAILURE;
         }

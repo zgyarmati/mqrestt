@@ -48,6 +48,8 @@ init_config(const char*filepath){
     retval->mqtt_broker_port = iniparser_getint(ini,INISECTION"mqtt_broker_port",1883);
 
     retval->mqtt_topic = iniparser_getstring(ini,INISECTION"mqtt_topic","facility");
+    
+    retval->mqtt_keepalive = iniparser_getint(ini,INISECTION"mqtt_keepalive",30);
     return retval;
 }
 
