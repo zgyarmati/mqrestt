@@ -123,7 +123,7 @@ mqtt_curl_init(Configuration *config)
     struct mosquitto *mosq = NULL;
 
     mosquitto_lib_init();
-    mosq = mosquitto_new(NULL, clean_session, NULL);
+    mosq = mosquitto_new(NULL, clean_session, config);
     if(!mosq){
         fprintf(stderr, "Error: Out of memory.\n");
         return NULL;

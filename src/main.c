@@ -16,13 +16,15 @@
 #include <errno.h>
 #include <math.h>
 #include <assert.h>
+#include <sys/poll.h>
 
 #include <curl/curl.h>
+#include <mosquitto.h>
 
 #include <config.h>
 #include "configuration.h"
 #include "logging.h"
-#include <mosquitto.h>
+#include "mqtt_curl.h"
 
 
 
@@ -234,9 +236,38 @@ int main(int argc, char *argv[])
         ERROR("Failed to init MQTT client");
     }
     running = 1;
-    if (running){
-        mosquitto_loop_forever(mosq, -1, 1);
+    //pfd[0] is for the mosquitto socket, pfd[1] is for the mq file descriptor
+    struct pollfd pfd[2];
+    const int nfds = sizeof(pfd)/sizeof(struct pollfd);
+
+    while (running) {
+        int mosq_fd = mosquitto_socket(mosq); //this might change?
+        pfd[0].fd = mosq_fd;
+        pfd[0].events = POLLIN;
+        if (mosquitto_want_write(mosq)){
+            printf("Set POLLOUT\n");
+            pfd[0].events |= POLLOUT;
+        }
+        if(poll(pfd, nfds, 60/2 * 1000) < 0) {
+            printf("Poll() failed with <%s>, exiting",strerror(errno));
+            return EXIT_FAILURE;
+        }
+        // first checking the mosquitto socket
+        if(pfd[0].revents & POLLOUT) {
+            mosquitto_loop_write(mosq,1);
+        }
+        if(pfd[0].revents & POLLIN){
+            int ret = mosquitto_loop_read(mosq, 1);
+            if (ret == MOSQ_ERR_CONN_LOST) {
+                printf("reconnect...\n");
+                mosquitto_reconnect(mosq);
+            }
+        }
+        mosquitto_loop_misc(mosq);
+        if(pfd[1].revents & POLLIN){
+        }
     }
+
 
     mosquitto_destroy(mosq);
     mosquitto_lib_cleanup();
