@@ -6,6 +6,7 @@
 #include <config.h>
 #include "logging.h"
 
+#define MAX_TOPIC_LENGTH 128
 
 int
 rest_post(Configuration *config, const char *url, const char *payload )
@@ -68,8 +69,14 @@ mqtt_cb_msg(struct mosquitto *mosq, void *userdata,
 void
 mqtt_cb_connect(struct mosquitto *mosq, void *userdata, int result)
 {
+    Configuration *c = (Configuration *)userdata;
+    char buffer[MAX_TOPIC_LENGTH];
+    if(snprintf(buffer,MAX_TOPIC_LENGTH,"%s/#",c->mqtt_topic) >= MAX_TOPIC_LENGTH){
+        FATAL("Topic length in config is too long, the max is %d",MAX_TOPIC_LENGTH);
+        return;
+    }
     if(!result){
-        mosquitto_subscribe(mosq, NULL, "bordeaux/#", 2);
+        mosquitto_subscribe(mosq, NULL, buffer, 2);
     }else{
         WARNING("MQTT Connect failed\n");
     }
@@ -121,13 +128,13 @@ mqtt_cb_log(struct mosquitto *mosq, void *userdata,
 struct mosquitto*
 mqtt_curl_init(Configuration *config)
 {
-    bool clean_session = true;
     struct mosquitto *mosq = NULL;
+    bool clean_session = true;
 
     mosquitto_lib_init();
     mosq = mosquitto_new(NULL, clean_session, config);
     if(!mosq){
-        fprintf(stderr, "Error: Out of memory.\n");
+        FATAL("Error: Out of memory.\n");
         return NULL;
     }
     mosquitto_log_callback_set(mosq, mqtt_cb_log);
@@ -136,16 +143,28 @@ mqtt_curl_init(Configuration *config)
     mosquitto_subscribe_callback_set(mosq, mqtt_cb_subscribe);
     mosquitto_disconnect_callback_set(mosq, mqtt_cb_disconnect);
 
-    int running = 1; // changed from signal handler
-    while(running){ //we try until we succeed, or we killed
-        if(mosquitto_connect(mosq, config->mqtt_broker_host,
-                             config->mqtt_broker_port, config->mqtt_keepalive)){
-            ERROR("Unable to connect, host: %s, port: %d\n",
-                   config->mqtt_broker_host, config->mqtt_broker_port);
-            sleep(2);
-            continue;
-        }
-        break;
-    }
     return mosq;
+}
+
+bool
+mqtt_curl_connect(struct mosquitto *mosq, Configuration *config)
+{
+    int count = 3;
+    bool retval = false;
+    while(count--){
+        int ret = mosquitto_connect(mosq, config->mqtt_broker_host,
+                             config->mqtt_broker_port, config->mqtt_keepalive);
+        if(ret){
+            ERROR("Unable to connect, host: %s, port: %d, error: %s",
+                   config->mqtt_broker_host,
+                   config->mqtt_broker_port,
+                   mosquitto_strerror(ret));
+            sleep(2);
+        }
+        else {
+            retval = true;
+            break;
+        }
+    }
+    return retval;
 }

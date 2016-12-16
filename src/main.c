@@ -240,16 +240,23 @@ int main(int argc, char *argv[])
     //set up mosquitto
     struct mosquitto *mosq = NULL;
     mosq = mqtt_curl_init(config);
+    bool mqtt_connected = mqtt_curl_connect(mosq, config);
     if (mosq == NULL){
         ERROR("Failed to init MQTT client");
     }
     running = 1;
     //pfd[0] is for the mosquitto socket, pfd[1] is for the mq file descriptor
-    struct pollfd pfd[2];
+    struct pollfd pfd[1];
     const int nfds = sizeof(pfd)/sizeof(struct pollfd);
     const int poll_timeout = config->mqtt_keepalive/2*1000;
 
     while (running) {
+        if (!mqtt_connected){
+            DEBUG("Trying to reconnect...");
+            if (mosquitto_reconnect(mosq) == MOSQ_ERR_SUCCESS){
+                mqtt_connected = true;
+            }
+        }
         int mosq_fd = mosquitto_socket(mosq); //this might change?
         pfd[0].fd = mosq_fd;
         pfd[0].events = POLLIN;
@@ -258,7 +265,7 @@ int main(int argc, char *argv[])
             pfd[0].events |= POLLOUT;
         }
         if(poll(pfd, nfds, poll_timeout) < 0) {
-            printf("Poll() failed with <%s>, exiting",strerror(errno));
+            FATAL("Poll() failed with <%s>, exiting",strerror(errno));
             return EXIT_FAILURE;
         }
         // first checking the mosquitto socket
@@ -267,14 +274,12 @@ int main(int argc, char *argv[])
         }
         if(pfd[0].revents & POLLIN){
             int ret = mosquitto_loop_read(mosq, 1);
-            if (ret == MOSQ_ERR_CONN_LOST) {
-                printf("reconnect...\n");
-                mosquitto_reconnect(mosq);
+            if (ret == MOSQ_ERR_CONN_LOST ||
+                ret == MOSQ_ERR_NO_CONN) {
+                mqtt_connected = false;
             }
         }
         mosquitto_loop_misc(mosq);
-        if(pfd[1].revents & POLLIN){
-        }
     }
 
 
