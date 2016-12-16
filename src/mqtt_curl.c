@@ -69,7 +69,7 @@ void
 mqtt_cb_connect(struct mosquitto *mosq, void *userdata, int result)
 {
     if(!result){
-        mosquitto_subscribe(mosq, NULL, "facility/#", 2);
+        mosquitto_subscribe(mosq, NULL, "bordeaux/#", 2);
     }else{
         WARNING("MQTT Connect failed\n");
     }
@@ -149,4 +149,3 @@ mqtt_curl_init(Configuration *config)
     }
     return mosq;
 }
-

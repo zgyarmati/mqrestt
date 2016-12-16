@@ -50,7 +50,9 @@ void handle_signal(int sig)
      //   fprintf(log_stream, "Debug: stopping daemon ...\n");
         /* Unlock and close lockfile */
         if(pid_fd != -1) {
-            lockf(pid_fd, F_ULOCK, 0);
+            if(!lockf(pid_fd, F_ULOCK, 0)){
+                fprintf(stderr,"Failed to unlock lockfile\n");
+            }
             close(pid_fd);
         }
         /* Try to delete lockfile */
@@ -110,7 +112,10 @@ static void daemonize()
 
     /* Change the working directory to the root directory */
     /* or another appropriated directory */
-    chdir("/");
+    if(chdir("/")){
+        fprintf(stderr,"Failed to cd to /, exiting");
+        exit(-1);
+    }
 
     /* Close all open file descriptors */
     for(fd = sysconf(_SC_OPEN_MAX); fd > 0; fd--)
@@ -141,7 +146,10 @@ static void daemonize()
         /* Get current PID */
         sprintf(str, "%d\n", getpid());
         /* Write PID to lockfile */
-        write(pid_fd, str, strlen(str));
+        if(!(write(pid_fd, str, strlen(str)))){
+            fprintf(stderr,"Failed to writen pid into lockfile, exiting...");
+            exit(-1);
+        }
     }
 }
 
