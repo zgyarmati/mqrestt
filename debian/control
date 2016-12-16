@@ -1,0 +1,20 @@
+Source: mqrestt
+Section: devel
+Priority: optional
+Maintainer: Zoltan Gyarmati <mr.zoltan.gyarmati@gmail.com>
+Build-Depends: debhelper (>= 5), dh-systemd
+Standards-Version: 3.9.1
+
+Package: mqrestt
+Priority: optional
+Section: misc
+Architecture: any
+Depends:  ${shlibs:Depends}, ${misc:Depends}, ${dist:Depends}
+Description: mqrestt 'MQTT-REST bridge daemon'
+
+Package: mqrestt-dbg
+Priority: optional
+Section: misc
+Depends: mqrestt (= ${source:Version})
+Architecture: any
+Description: Debug symbols for mqrestt.

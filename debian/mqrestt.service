@@ -1,0 +1,9 @@
+[Unit]
+Description=MQTT-REST bridge
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/mqrestt -c /etc/mqrestt.ini
+
+[Install]
+WantedBy=multi-user.target
