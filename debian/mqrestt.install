@@ -1,2 +1,3 @@
 usr/bin/mqrestt
 etc/mqrestt.ini
+/usr/share/man/man1/mqrestt.1
