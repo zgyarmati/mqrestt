@@ -50,6 +50,36 @@ init_config(const char*filepath){
     retval->mqtt_topic = iniparser_getstring(ini,INISECTION"mqtt_topic","facility");
     
     retval->mqtt_keepalive = iniparser_getint(ini,INISECTION"mqtt_keepalive",30);
+   
+    retval->mqtt_tls = iniparser_getboolean(ini,INISECTION"mqtt_tls",0);
+
+    retval->mqtt_cafile = iniparser_getstring(ini,INISECTION"mqtt_cafile",NULL);
+    retval->mqtt_capath = iniparser_getstring(ini,INISECTION"mqtt_capath",NULL);
+    retval->mqtt_certfile = iniparser_getstring(ini,INISECTION"mqtt_certfile",NULL);
+    retval->mqtt_keyfile = iniparser_getstring(ini,INISECTION"mqtt_keyfile",NULL);
+
+    if(retval->mqtt_cafile && !strlen(retval->mqtt_cafile)){
+        retval->mqtt_cafile = NULL;
+    }
+
+    if(retval->mqtt_capath && !strlen(retval->mqtt_capath)){
+        retval->mqtt_capath = NULL;
+    }
+
+    if(retval->mqtt_certfile && !strlen(retval->mqtt_certfile)){
+        retval->mqtt_certfile = NULL;
+    }
+
+    if(retval->mqtt_keyfile && !strlen(retval->mqtt_keyfile)){
+        retval->mqtt_keyfile = NULL;
+    }
+
+    if(retval->mqtt_tls &&
+       !retval->mqtt_cafile &&
+       !retval->mqtt_capath) {
+        fprintf(stderr,"config error: either mqtt_cafile or mqtt_capath need to be set!\n");
+        return NULL;
+    }
     return retval;
 }
 

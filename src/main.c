@@ -261,7 +261,7 @@ int main(int argc, char *argv[])
         pfd[0].fd = mosq_fd;
         pfd[0].events = POLLIN;
         if (mosquitto_want_write(mosq)){
-            printf("Set POLLOUT\n");
+            //printf("Set POLLOUT\n");
             pfd[0].events |= POLLOUT;
         }
         if(poll(pfd, nfds, poll_timeout) < 0) {

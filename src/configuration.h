@@ -22,7 +22,7 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-
+#include <stdbool.h>
 
 #ifndef CONFIGURATION_H
 #define CONFIGURATION_H
@@ -39,6 +39,12 @@ typedef struct
     int         mqtt_broker_port;
     const char* mqtt_topic;
     int         mqtt_keepalive;
+
+    bool        mqtt_tls;
+    const char* mqtt_cafile;
+    const char* mqtt_capath;
+    const char* mqtt_certfile;
+    const char* mqtt_keyfile;
 
 } Configuration;
 

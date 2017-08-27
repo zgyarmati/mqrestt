@@ -26,3 +26,5 @@ src/Makefile
 *.tar.gz
 *.exe
 *.xml
+*.log
+*.before

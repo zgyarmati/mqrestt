@@ -151,6 +151,20 @@ mqtt_curl_connect(struct mosquitto *mosq, Configuration *config)
 {
     int count = 3;
     bool retval = false;
+
+    if (config->mqtt_tls){
+        INFO("Enable MQTT TLS support");
+        int r = mosquitto_tls_set(mosq,
+            config->mqtt_cafile,
+            config->mqtt_capath,
+            config->mqtt_certfile,
+            config->mqtt_keyfile,
+            NULL);
+        if (r != MOSQ_ERR_SUCCESS){
+            FATAL("Failed to set up TLS, check config!");
+        }
+    }
+
     while(count--){
         int ret = mosquitto_connect(mosq, config->mqtt_broker_host,
                              config->mqtt_broker_port, config->mqtt_keepalive);
