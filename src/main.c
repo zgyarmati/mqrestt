@@ -178,7 +178,7 @@ print_version(void)
     int mosquitto_ver = mosquitto_lib_version(&major,&minor,&revision);
     fprintf(stderr, "Libmosquitto version: %d.%d-%d (%d)\n",
             major, minor, revision, mosquitto_ver);
-    fprintf(stderr, "Libcurl version info: %s\n", curl_version());
+    fprintf(stderr, "Libcurl version: %s\n", curl_version());
 }
 
 
