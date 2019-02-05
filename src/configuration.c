@@ -80,6 +80,10 @@ init_config(const char*filepath){
         fprintf(stderr,"config error: either mqtt_cafile or mqtt_capath need to be set!\n");
         return NULL;
     }
+    retval->mqtt_user_pw = iniparser_getboolean(ini,INISECTION"mqtt_user_pw",0);
+
+    retval->mqtt_user = iniparser_getstring(ini,INISECTION"mqtt_user",NULL);
+    retval->mqtt_pw = iniparser_getstring(ini,INISECTION"mqtt_pw",NULL);
     return retval;
 }
 

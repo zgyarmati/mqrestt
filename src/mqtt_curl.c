@@ -164,6 +164,12 @@ mqtt_curl_connect(struct mosquitto *mosq, Configuration *config)
             FATAL("Failed to set up TLS, check config!");
         }
     }
+    if (config->mqtt_user_pw){
+        int r = mosquitto_username_pw_set(mosq,config->mqtt_user,config->mqtt_pw);
+        if (r != MOSQ_ERR_SUCCESS){
+            FATAL("Failed to set up username/password, check config!");
+        }
+    }
 
     while(count--){
         int ret = mosquitto_connect(mosq, config->mqtt_broker_host,

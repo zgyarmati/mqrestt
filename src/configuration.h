@@ -46,6 +46,10 @@ typedef struct
     const char* mqtt_certfile;
     const char* mqtt_keyfile;
 
+    bool        mqtt_user_pw;
+    const char* mqtt_user;
+    const char* mqtt_pw;
+
 } Configuration;
 
 
