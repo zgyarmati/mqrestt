@@ -1,8 +1,9 @@
 Source: mqrestt
 Section: devel
 Priority: optional
-Maintainer: Zoltan Gyarmati <mr.zoltan.gyarmati@gmail.com>
-Build-Depends: debhelper (>= 5), dh-systemd, libmosquitto-dev, libcurl-dev, asciidoc, dblatex, dh-autoreconf
+Maintainer: Zoltan Gyarmati <zgyarmati@zgyarmati.de>
+Build-Depends: debhelper (>= 5), dh-systemd, libmosquitto-dev,
+               libcurl-dev, asciidoc, dblatex, dh-autoreconf, libconfuse-dev
 Standards-Version: 3.9.1
 
 Package: mqrestt

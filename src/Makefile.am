@@ -3,8 +3,6 @@ AM_LDFLAGS = -lm
 
 bin_PROGRAMS = mqrestt
 mqrestt_SOURCES = logging.c configuration.c configuration.h \
-					iniparser/dictionary.c iniparser/iniparser.c \
-					iniparser/dictionary.h  iniparser/iniparser.h \
 					logging.h main.c mqtt_curl.c mqtt_curl.h
 
-mqrestt_LDADD =  ${libcurl_LIBS} ${MOSQUITTO_LIBS} @LIBCURL@
+mqrestt_LDADD =  ${libcurl_LIBS} ${MOSQUITTO_LIBS} @LIBCURL@  ${libconfuse_LIBS}

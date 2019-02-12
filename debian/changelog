@@ -1,5 +1,11 @@
-mqrestt (0.1-1) UNRELEASED; urgency=medium
+mqrestt (0.2~) UNRELEASED; urgency=medium
+
+  * Migrate config to libconfuse
+
+ -- Zoltan Gyarmati <zgyarmati@zgyarmati.de>  Tue, 12 Feb 2019 23:46:30 +0100
+
+mqrestt (0.1-1) bionic; urgency=medium
 
   * Initial debianization
 
- -- Zoltan Gyarmati <zgyarmati@zgyarmati-ThinkPad-T510>  Fri, 16 Dec 2016 10:55:06 +0100
+ -- Zoltan Gyarmati <zgyarmati@zgyarmati.de>  Fri, 16 Dec 2016 10:55:06 +0100

@@ -10,7 +10,7 @@
 #include <signal.h>
 
 #include <config.h>
-#include "iniparser/iniparser.h"
+#include <confuse.h>
 
 #define INISECTION PACKAGE_NAME":"
 
@@ -25,38 +25,77 @@
  * and the error supposed to be printed on stderr
  */
 Configuration *
-init_config(const char*filepath){
+init_config(const char*filepath)
+{
     Configuration *retval = malloc(sizeof(Configuration));
-    dictionary  *ini ;
-    ini = iniparser_load(filepath);
-    if (ini==NULL) {
+
+#if 0
+    static cfg_opt_t unit_opts[] = {
+        CFG_STR("webservice_baseurl", "localhost", CFGF_NONE),
+        CFG_STR("mqtt_topic", "default_topic", CFGF_NONE),
+        CFG_END()
+    };
+#endif
+    cfg_opt_t opts[] = {
+        //logging
+        CFG_STR("logtarget", "stdout", CFGF_NONE),
+        CFG_STR("logfile", "mgrestt.log", CFGF_NONE),
+        CFG_STR("logfacility", "local0", CFGF_NONE),
+        CFG_STR("loglevel", "fatal", CFGF_NONE),
+
+        CFG_STR("webservice_baseurl", "localhost", CFGF_NONE),
+
+        CFG_STR("mqtt_broker_host", "localhost", CFGF_NONE),
+        CFG_INT("mqtt_broker_port", 1883, CFGF_NONE),
+
+        CFG_STR("mqtt_topic", "-----", CFGF_NONE),
+        CFG_INT("mqtt_keepalive", 30, CFGF_NONE),
+        CFG_BOOL("mqtt_tls", false, CFGF_NONE),
+        CFG_STR("mqtt_cafile", "-----", CFGF_NONE),
+        CFG_STR("mqtt_capath", "-----", CFGF_NONE),
+        CFG_STR("mqtt_certfile", "-----", CFGF_NONE),
+        CFG_STR("mqtt_keyfile", "-----", CFGF_NONE),
+
+        CFG_BOOL("mqtt_user_pw", false, CFGF_NONE),
+        CFG_STR("mqtt_user", "-----", CFGF_NONE),
+        CFG_STR("mqtt_pw", "-----", CFGF_NONE),
+
+        //CFG_SEC("unit", unit_opts, CFGF_MULTI | CFGF_TITLE),
+        CFG_END()
+    };
+
+    cfg_t *cfg = cfg_init(opts, 0);
+    cfg_parse(cfg, filepath);
+
+
+    if (cfg==NULL) {
         fprintf(stderr, "cannot parse file: %s\n", filepath);
         return NULL;
     }
-    iniparser_dump(ini, stderr);
+    cfg_print(cfg, stderr);
     retval->appname = INISECTION;
     //logging
-    retval->logtarget = iniparser_getstring(ini,INISECTION"logtarget","stdout");
-    retval->logfile = iniparser_getstring(ini,INISECTION"logfile","timezoned.log");
-    retval->logfacility = iniparser_getstring(ini,INISECTION"logfacility","local0");
-    retval->loglevel = iniparser_getstring(ini,INISECTION"loglevel","fatal");
+    retval->logtarget = cfg_getstr(cfg,"logtarget");
+    retval->logfile = cfg_getstr(cfg,"logfile");
+    retval->logfacility = cfg_getstr(cfg,"logfacility");
+    retval->loglevel = cfg_getstr(cfg,"loglevel");
     //application
     //webservice
-    retval->webservice_baseurl = iniparser_getstring(ini,INISECTION"webservice_baseurl","127.0.0.1");
+    retval->webservice_baseurl = cfg_getstr(cfg,"webservice_baseurl");
     //MQTT
-    retval->mqtt_broker_host = iniparser_getstring(ini,INISECTION"mqtt_broker_host","127.0.0.1");
-    retval->mqtt_broker_port = iniparser_getint(ini,INISECTION"mqtt_broker_port",1883);
+    retval->mqtt_broker_host = cfg_getstr(cfg,"mqtt_broker_host");
+    retval->mqtt_broker_port = cfg_getint(cfg,"mqtt_broker_port");
 
-    retval->mqtt_topic = iniparser_getstring(ini,INISECTION"mqtt_topic","facility");
+    retval->mqtt_topic = cfg_getstr(cfg,"mqtt_topic");
     
-    retval->mqtt_keepalive = iniparser_getint(ini,INISECTION"mqtt_keepalive",30);
+    retval->mqtt_keepalive = cfg_getint(cfg,"mqtt_keepalive");
    
-    retval->mqtt_tls = iniparser_getboolean(ini,INISECTION"mqtt_tls",0);
+    retval->mqtt_tls = cfg_getbool(cfg,"mqtt_tls");
 
-    retval->mqtt_cafile = iniparser_getstring(ini,INISECTION"mqtt_cafile",NULL);
-    retval->mqtt_capath = iniparser_getstring(ini,INISECTION"mqtt_capath",NULL);
-    retval->mqtt_certfile = iniparser_getstring(ini,INISECTION"mqtt_certfile",NULL);
-    retval->mqtt_keyfile = iniparser_getstring(ini,INISECTION"mqtt_keyfile",NULL);
+    retval->mqtt_cafile = cfg_getstr(cfg,"mqtt_cafile");
+    retval->mqtt_capath = cfg_getstr(cfg,"mqtt_capath");
+    retval->mqtt_certfile = cfg_getstr(cfg,"mqtt_certfile");
+    retval->mqtt_keyfile = cfg_getstr(cfg,"mqtt_keyfile");
 
     if(retval->mqtt_cafile && !strlen(retval->mqtt_cafile)){
         retval->mqtt_cafile = NULL;
@@ -80,10 +119,10 @@ init_config(const char*filepath){
         fprintf(stderr,"config error: either mqtt_cafile or mqtt_capath need to be set!\n");
         return NULL;
     }
-    retval->mqtt_user_pw = iniparser_getboolean(ini,INISECTION"mqtt_user_pw",0);
+    retval->mqtt_user_pw = cfg_getbool(cfg,"mqtt_user_pw");
 
-    retval->mqtt_user = iniparser_getstring(ini,INISECTION"mqtt_user",NULL);
-    retval->mqtt_pw = iniparser_getstring(ini,INISECTION"mqtt_pw",NULL);
+    retval->mqtt_user = cfg_getstr(cfg,"mqtt_user");
+    retval->mqtt_pw = cfg_getstr(cfg,"mqtt_pw");
     return retval;
 }
 

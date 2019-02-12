@@ -1,5 +1,5 @@
 AC_PREREQ([2.69])
-AC_INIT(mqrestt, 0.1~, mr.zoltan.gyarmati@gmail.com)
+AC_INIT(mqrestt, 0.2~, zgyarmati@zgyarmati.de)
 AC_CONFIG_SRCDIR([src/main.c])
 AM_INIT_AUTOMAKE([subdir-objects])
 AM_SILENT_RULES([yes])
@@ -33,6 +33,9 @@ fi
 
 # Check for libcurl
 LIBCURL_CHECK_CONFIG([yes],[],[],[AC_MSG_ERROR([libcurl development files required])])
+
+PKG_PROG_PKG_CONFIG(0.26)
+PKG_CHECK_MODULES([libconfuse], [libconfuse])
 
 # check for doc generating tools
 AC_CHECK_PROGS([A2X], [a2x])
