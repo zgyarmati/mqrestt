@@ -21,7 +21,7 @@ void *mqrestt_unit_run(void *configdata)
     assert(config != NULL);
 
     //set up mosquitto
-    struct mosquitto *mosq = NULL;
+    struct mosquitto *mosq;
     mosq = mqtt_curl_init(unitconfig);
     if (mosq == NULL){
         FATAL("Failed to init MQTT client");

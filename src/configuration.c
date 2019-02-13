@@ -33,13 +33,11 @@ init_config(const char*filepath)
 {
     Configuration *retval = malloc(sizeof(Configuration));
 
-#if 1
     static cfg_opt_t unit_opts[] = {
         CFG_STR("webservice_baseurl", "localhost", CFGF_NONE),
         CFG_STR("mqtt_topic", "default_topic", CFGF_NONE),
         CFG_END()
     };
-#endif
     cfg_opt_t opts[] = {
         //logging
         CFG_STR("logtarget", "stdout", CFGF_NONE),
@@ -74,6 +72,7 @@ init_config(const char*filepath)
 
     if (cfg==NULL) {
         fprintf(stderr, "cannot parse file: %s\n", filepath);
+        free_config();
         return NULL;
     }
     cfg_print(cfg, stderr);
@@ -121,6 +120,7 @@ init_config(const char*filepath)
        !retval->mqtt_cafile &&
        !retval->mqtt_capath) {
         fprintf(stderr,"config error: either mqtt_cafile or mqtt_capath need to be set!\n");
+        free_config();
         return NULL;
     }
     retval->mqtt_user_pw = cfg_getbool(cfg,"mqtt_user_pw");

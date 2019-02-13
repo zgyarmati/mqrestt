@@ -135,11 +135,10 @@ mqtt_cb_log(struct mosquitto *mosq, void *userdata,
 struct mosquitto*
 mqtt_curl_init(UnitConfiguration *config)
 {
-    struct mosquitto *mosq = NULL;
+    struct mosquitto *mosq;
     bool clean_session = true;
 
     mosq = mosquitto_new(config->unit_name, clean_session, config);
-    //mosq = mosquitto_new(NULL, clean_session, config);
     if(!mosq){
         FATAL("Error: Out of memory.\n");
         return NULL;

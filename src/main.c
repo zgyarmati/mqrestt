@@ -291,6 +291,7 @@ int main(int argc, char *argv[])
     // free up the main config
     free_config();
     mosquitto_lib_cleanup();
+    log_finalize();
     INFO("bye");
     return EXIT_SUCCESS;
 }
