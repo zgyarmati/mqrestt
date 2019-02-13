@@ -25,7 +25,7 @@ void *mqrestt_unit_run(void *configdata)
     mosq = mqtt_curl_init(unitconfig);
     if (mosq == NULL){
         FATAL("Failed to init MQTT client");
-        return;
+        return NULL;
     }
     bool mqtt_connected = mqtt_curl_connect(mosq, config);
     //pfd[0] is for the mosquitto socket, pfd[1] is for the mq file descriptor

@@ -38,4 +38,4 @@ debian/mqrestt-dbg/
 debian/mqrestt.substvars
 debian/mqrestt/
 debian/tmp/
-
+compile_commands.json

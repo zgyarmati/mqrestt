@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <string.h>
 #include <signal.h>
+#include <stdlib.h>
 
 #include <config.h>
 #include <confuse.h>
