@@ -11,10 +11,14 @@
 
 #include <config.h>
 #include <confuse.h>
+#include <assert.h>
+
+#include "logging.h"
 
 #define INISECTION PACKAGE_NAME":"
 
 
+cfg_t *cfg = NULL;;
 /*
  * parses the ini file, and returns a pointer to a
  * dynamically allocated instance of the
@@ -29,7 +33,7 @@ init_config(const char*filepath)
 {
     Configuration *retval = malloc(sizeof(Configuration));
 
-#if 0
+#if 1
     static cfg_opt_t unit_opts[] = {
         CFG_STR("webservice_baseurl", "localhost", CFGF_NONE),
         CFG_STR("mqtt_topic", "default_topic", CFGF_NONE),
@@ -60,11 +64,11 @@ init_config(const char*filepath)
         CFG_STR("mqtt_user", "-----", CFGF_NONE),
         CFG_STR("mqtt_pw", "-----", CFGF_NONE),
 
-        //CFG_SEC("unit", unit_opts, CFGF_MULTI | CFGF_TITLE),
+        CFG_SEC("unit", unit_opts, CFGF_MULTI | CFGF_TITLE),
         CFG_END()
     };
 
-    cfg_t *cfg = cfg_init(opts, 0);
+    cfg = cfg_init(opts, 0);
     cfg_parse(cfg, filepath);
 
 
@@ -81,12 +85,12 @@ init_config(const char*filepath)
     retval->loglevel = cfg_getstr(cfg,"loglevel");
     //application
     //webservice
-    retval->webservice_baseurl = cfg_getstr(cfg,"webservice_baseurl");
+    //retval->webservice_baseurl = cfg_getstr(cfg,"webservice_baseurl");
     //MQTT
     retval->mqtt_broker_host = cfg_getstr(cfg,"mqtt_broker_host");
     retval->mqtt_broker_port = cfg_getint(cfg,"mqtt_broker_port");
 
-    retval->mqtt_topic = cfg_getstr(cfg,"mqtt_topic");
+    //retval->mqtt_topic = cfg_getstr(cfg,"mqtt_topic");
     
     retval->mqtt_keepalive = cfg_getint(cfg,"mqtt_keepalive");
    
@@ -126,3 +130,40 @@ init_config(const char*filepath)
     return retval;
 }
 
+int
+get_unitconfigs(UnitConfiguration *configarray[], const int max_size)
+{
+    assert(cfg != NULL);
+    const int unit_count = cfg_size(cfg,"unit");
+    if (max_size < unit_count)
+    {
+        fprintf(stderr,"config error: configarray too small\n");
+        return -1;
+    }
+    for(int i = 0; i < unit_count; i++)
+    {
+        configarray[i] = malloc (sizeof(UnitConfiguration));
+        if (configarray[i] == NULL)
+        {
+            fprintf(stderr,"failed to allocate memory\n");
+            return -1;
+        }
+        cfg_t *unit = cfg_getnsec(cfg, "unit", i);
+
+        INFO("UNIT: %s", cfg_title(unit));
+        configarray[i]->unit_name = cfg_title(unit);
+
+        INFO("\tURL: %s", cfg_getstr(unit, "webservice_baseurl"));
+        configarray[i]->webservice_baseurl = cfg_getstr(unit, "webservice_baseurl");
+
+        INFO("\tTOPIC: %s", cfg_getstr(unit, "mqtt_topic"));
+        configarray[i]->mqtt_topic = cfg_getstr(unit, "mqtt_topic");
+    }
+    return unit_count;
+}
+
+void free_config()
+{
+    assert(cfg != NULL);
+    cfg_free(cfg);
+}

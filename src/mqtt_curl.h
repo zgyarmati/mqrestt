@@ -4,7 +4,7 @@
 #include <mosquitto.h>
 #include "configuration.h"
 
-struct mosquitto* mqtt_curl_init(Configuration *config);
+struct mosquitto* mqtt_curl_init(UnitConfiguration *config);
 bool mqtt_curl_connect(struct mosquitto *mosq, Configuration *config);
 
 #endif

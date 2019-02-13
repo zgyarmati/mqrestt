@@ -34,10 +34,8 @@ typedef struct
     const char* logfile;
     const char* logfacility;
     const char* loglevel;
-    const char* webservice_baseurl;
     const char* mqtt_broker_host;
     int         mqtt_broker_port;
-    const char* mqtt_topic;
     int         mqtt_keepalive;
 
     bool        mqtt_tls;
@@ -53,6 +51,21 @@ typedef struct
 } Configuration;
 
 
+/* This struct holds the configuration of 
+ * one unit. It also has a reference to the common config items.
+ * This struct passed to the worker threads
+ */
+typedef struct
+{
+    const char* unit_name;
+    const char* webservice_baseurl;
+    const char* mqtt_topic;
+    Configuration *common_configuration;
+} UnitConfiguration;
+
+
 Configuration *init_config(const char*filepath);
+int get_unitconfigs(UnitConfiguration *configarray[],  const int max_size);
+void free_config();
 
 #endif

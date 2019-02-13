@@ -14,6 +14,8 @@ AC_PROG_INSTALL
 # Checks for header files.
 AC_CHECK_HEADERS([fcntl.h stdlib.h string.h syslog.h unistd.h])
 
+AX_PTHREAD([], [AC_MSG_ERROR([requires pthread])])
+
 # Checks for typedefs, structures, and compiler characteristics.
 
 # Checks for library functions.

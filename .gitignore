@@ -28,3 +28,14 @@ src/Makefile
 *.xml
 *.log
 *.before
+config.guess
+config.sub
+debian/.debhelper/
+debian/autoreconf.after
+debian/files
+debian/mqrestt-dbg.substvars
+debian/mqrestt-dbg/
+debian/mqrestt.substvars
+debian/mqrestt/
+debian/tmp/
+

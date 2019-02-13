@@ -31,6 +31,8 @@
 #ifndef WIN32
 #include <syslog.h>
 #endif
+#include <string.h>
+
 
 
 /* the members indicating the type/severity of the log message

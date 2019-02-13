@@ -17,6 +17,7 @@
 #include <math.h>
 #include <assert.h>
 #include <sys/poll.h>
+#include <pthread.h>
 
 #include <curl/curl.h>
 #include <mosquitto.h>
@@ -24,11 +25,11 @@
 #include <config.h>
 #include "configuration.h"
 #include "logging.h"
-#include "mqtt_curl.h"
+#include "mqrestt_unit.h"
 
 
 
-static int  running = 0;
+bool running = true;
 static char *conf_file_name = PACKAGE_NAME".ini";
 static char *pid_file = "/var/lock/"PACKAGE_NAME;
 static int  pid_fd = -1;
@@ -36,6 +37,7 @@ static char *app_name = PACKAGE_NAME;
 
 
 Configuration *config = NULL;
+#define MAX_UNIT_NUM  32
 
 
 
@@ -59,7 +61,8 @@ void handle_signal(int sig)
         if(pid_file != NULL) {
             unlink(pid_file);
         }
-        running = 0;
+        // notify the unit threads to exit
+        running = false;
     }
 }
 
@@ -222,6 +225,8 @@ int main(int argc, char *argv[])
         }
     }
 
+    signal(SIGINT, handle_signal);
+
     /* When daemonizing is requested at command line. */
     if(start_daemonized == 1) {
         daemonize();
@@ -237,56 +242,55 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
     INFO(PACKAGE_NAME" started, pid: %d", getpid());
-    //set up mosquitto
-    struct mosquitto *mosq = NULL;
-    mosq = mqtt_curl_init(config);
-    bool mqtt_connected = mqtt_curl_connect(mosq, config);
-    if (mosq == NULL){
-        ERROR("Failed to init MQTT client");
-    }
-    running = 1;
-    //pfd[0] is for the mosquitto socket, pfd[1] is for the mq file descriptor
-    struct pollfd pfd[1];
-    const int nfds = sizeof(pfd)/sizeof(struct pollfd);
-    const int poll_timeout = config->mqtt_keepalive/2*1000;
 
-    while (running) {
-        if (!mqtt_connected){
-            DEBUG("Trying to reconnect...");
-            if (mosquitto_reconnect(mosq) == MOSQ_ERR_SUCCESS){
-                mqtt_connected = true;
-            }
-        }
-        int mosq_fd = mosquitto_socket(mosq); //this might change?
-        pfd[0].fd = mosq_fd;
-        pfd[0].events = POLLIN;
-        if (mosquitto_want_write(mosq)){
-            //printf("Set POLLOUT\n");
-            pfd[0].events |= POLLOUT;
-        }
-        if(poll(pfd, nfds, poll_timeout) < 0) {
-            FATAL("Poll() failed with <%s>, exiting",strerror(errno));
-            return EXIT_FAILURE;
-        }
-        // first checking the mosquitto socket
-        if(pfd[0].revents & POLLOUT) {
-            mosquitto_loop_write(mosq,1);
-        }
-        if(pfd[0].revents & POLLIN){
-            int ret = mosquitto_loop_read(mosq, 1);
-            if (ret == MOSQ_ERR_CONN_LOST ||
-                ret == MOSQ_ERR_NO_CONN) {
-                mqtt_connected = false;
-            }
-        }
-        mosquitto_loop_misc(mosq);
+    // we need to call this only once, and it's not thread
+    // safe, so we do it here
+    mosquitto_lib_init();
+
+    // setting up storage for the unit configuration list
+    int count = MAX_UNIT_NUM;
+    UnitConfiguration *unit_configs[MAX_UNIT_NUM] = {NULL};
+    DEBUG("S %d\n",sizeof(unit_configs));
+    count = get_unitconfigs(unit_configs, count);
+
+    if (count < 0)
+    {
+        FATAL("Failed to init unit configs!");
+        return EXIT_FAILURE;
+    }
+    if (count == 0)
+    {
+        ERROR("No units found. Please check configuration");
+        return EXIT_FAILURE;
     }
 
+    // create a thread for each unit
+    pthread_t threads[count];
 
-    mosquitto_destroy(mosq);
+    for (int i=0;i<count;i++)
+    {
+        // setting the commong config in each unit configuration
+        unit_configs[i]->common_configuration = config;
+
+        int ret = pthread_create(&threads[i], NULL, mqrestt_unit_run, (void*) unit_configs[i]);
+        if(ret) {
+            fprintf(stderr,"Error - pthread_create() return code: %d\n",ret);
+            exit(EXIT_FAILURE);
+        }
+    }
+    // waiting for all of the threads to exit, if ever
+    for (int i = 0; i < count; i++) {
+        pthread_join(threads[i], 0);
+    }
+
+    // frreing up the per-unit configs
+    for (int i=0; i < count; i++)
+    {
+        free(unit_configs[i]);
+    }
+    // free up the main config
+    free_config();
     mosquitto_lib_cleanup();
-
     INFO("bye");
-
     return EXIT_SUCCESS;
 }

@@ -5,11 +5,12 @@
 
 #include <config.h>
 #include "logging.h"
+#include <sys/types.h>
 
 #define MAX_TOPIC_LENGTH 128
 
 int
-rest_post(Configuration *config, const char *url, const char *payload )
+rest_post(UnitConfiguration *config, const char *url, const char *payload )
 {
     CURL *curl;
     CURLcode res;
@@ -54,7 +55,7 @@ void
 mqtt_cb_msg(struct mosquitto *mosq, void *userdata,
                   const struct mosquitto_message *msg)
 {
-    Configuration *config = (Configuration *)userdata;
+    UnitConfiguration *config = (UnitConfiguration *)userdata;
     //tailoring the url
     char *url = msg->topic + strlen(config->mqtt_topic) + 1; // +1 the '/'
     DEBUG("Received msg on topic: %s\n", msg->topic);
@@ -69,7 +70,10 @@ mqtt_cb_msg(struct mosquitto *mosq, void *userdata,
 void
 mqtt_cb_connect(struct mosquitto *mosq, void *userdata, int result)
 {
-    Configuration *c = (Configuration *)userdata;
+    UnitConfiguration *c = (UnitConfiguration *)userdata;
+
+    pid_t tid = pthread_self();
+    DEBUG("MQTT connect, UNIT: %s, thread: %ld", c->unit_name, (long)tid);
     char buffer[MAX_TOPIC_LENGTH];
     if(snprintf(buffer,MAX_TOPIC_LENGTH,"%s/#",c->mqtt_topic) >= MAX_TOPIC_LENGTH){
         FATAL("Topic length in config is too long, the max is %d",MAX_TOPIC_LENGTH);
@@ -86,16 +90,18 @@ void
 mqtt_cb_subscribe(struct mosquitto *mosq, void *userdata, int mid,
                         int qos_count, const int *granted_qos)
 {
-    INFO("Subscribed (mid: %d): %d", mid, granted_qos[0]);
+    UnitConfiguration *c = (UnitConfiguration *)userdata;
+    INFO("Unit [%s]: Subscribed (mid: %d): %d", c->unit_name, mid, granted_qos[0]);
     for(int i=1; i<qos_count; i++){
         INFO("\t %d", granted_qos[i]);
     }
 }
 
 void
-mqtt_cb_disconnect(struct mosquitto *mosq, void *userdat, int rc)
+mqtt_cb_disconnect(struct mosquitto *mosq, void *userdata, int rc)
 {
-    WARNING("MQTT disconnect, error: %d: %s",rc, mosquitto_strerror(rc));
+    UnitConfiguration *c = (UnitConfiguration *)userdata;
+    WARNING("Unit [%s] MQTT disconnect, error: %d: %s",c->unit_name, rc, mosquitto_strerror(rc));
 }
 
 
@@ -106,19 +112,20 @@ void
 mqtt_cb_log(struct mosquitto *mosq, void *userdata,
                   int level, const char *str)
 {
+    UnitConfiguration *c = (UnitConfiguration *)userdata;
     switch(level){
         case MOSQ_LOG_DEBUG:
-            DEBUG(str);
+            DEBUG("Unit [%s]: %s",c->unit_name, str);
             break;
         case MOSQ_LOG_INFO:
         case MOSQ_LOG_NOTICE:
-            INFO(str);
+            INFO("Unit [%s]: %s",c->unit_name, str);
             break;
         case MOSQ_LOG_WARNING:
-            WARNING(str);
+            WARNING("Unit [%s]: %s",c->unit_name, str);
             break;
         case MOSQ_LOG_ERR:
-            ERROR(str);
+            ERROR("Unit [%s]: %s",c->unit_name, str);
             break;
         default:
             FATAL("Unknown MOSQ loglevel!");
@@ -126,17 +133,20 @@ mqtt_cb_log(struct mosquitto *mosq, void *userdata,
 }
 
 struct mosquitto*
-mqtt_curl_init(Configuration *config)
+mqtt_curl_init(UnitConfiguration *config)
 {
     struct mosquitto *mosq = NULL;
     bool clean_session = true;
 
-    mosquitto_lib_init();
-    mosq = mosquitto_new(NULL, clean_session, config);
+    mosq = mosquitto_new(config->unit_name, clean_session, config);
+    //mosq = mosquitto_new(NULL, clean_session, config);
     if(!mosq){
         FATAL("Error: Out of memory.\n");
         return NULL;
     }
+    mosquitto_threaded_set(mosq,true);
+    mosquitto_user_data_set(mosq,config);
+
     mosquitto_log_callback_set(mosq, mqtt_cb_log);
     mosquitto_connect_callback_set(mosq, mqtt_cb_connect);
     mosquitto_message_callback_set(mosq, mqtt_cb_msg);
