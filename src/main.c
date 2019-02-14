@@ -266,20 +266,23 @@ int main(int argc, char *argv[])
 
     // create a thread for each unit
     pthread_t threads[count];
-
+    int threadcounter = 0;
     for (int i=0;i<count;i++)
     {
+        if (!unit_configs[i]->enabled){
+            continue;
+        }
         // setting the commong config in each unit configuration
         unit_configs[i]->common_configuration = config;
 
-        int ret = pthread_create(&threads[i], NULL, mqrestt_unit_run, (void*) unit_configs[i]);
+        int ret = pthread_create(&threads[threadcounter++], NULL, mqrestt_unit_run, (void*) unit_configs[i]);
         if(ret) {
             fprintf(stderr,"Error - pthread_create() return code: %d\n",ret);
             exit(EXIT_FAILURE);
         }
     }
     // waiting for all of the threads to exit, if ever
-    for (int i = 0; i < count; i++) {
+    for (int i = 0; i < threadcounter; i++) {
         pthread_join(threads[i], 0);
     }
 

@@ -37,6 +37,7 @@ init_config(const char*filepath)
     static cfg_opt_t unit_opts[] = {
         CFG_STR("webservice_baseurl", "localhost", CFGF_NONE),
         CFG_STR("mqtt_topic", "default_topic", CFGF_NONE),
+        CFG_BOOL("enabled", true, CFGF_NONE),
         CFG_END()
     };
     cfg_opt_t opts[] = {
@@ -159,6 +160,7 @@ get_unitconfigs(UnitConfiguration *configarray[], const int max_size)
 
         INFO("\tTOPIC: %s", cfg_getstr(unit, "mqtt_topic"));
         configarray[i]->mqtt_topic = cfg_getstr(unit, "mqtt_topic");
+        configarray[i]->enabled = cfg_getbool(unit,"enabled");
     }
     return unit_count;
 }

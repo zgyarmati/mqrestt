@@ -58,6 +58,7 @@ typedef struct
 typedef struct
 {
     const char* unit_name;
+    bool        enabled;
     const char* webservice_baseurl;
     const char* mqtt_topic;
     Configuration *common_configuration;
