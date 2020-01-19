@@ -20,3 +20,6 @@ ROADMAP
     - rewrite support, to rewrite MQTT topics into URL's and vica verse (a'la Apache mod_rewrite)
 
 
+Bookmarks
+========
+https://iot.stackexchange.com/questions/3763/restapi-and-mqtt-broker

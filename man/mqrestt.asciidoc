@@ -44,5 +44,5 @@ Zoltan Gyarmati <zgyarmati@zgyarmati.de>
 
 COPYING
 -------
-Copyright (c) 2018 Zoltan Gyarmati (https://zgyarmati.de)
-LGPL
+Copyright (c) 2020 Zoltan Gyarmati (https://zgyarmati.de)
+GPLv3
