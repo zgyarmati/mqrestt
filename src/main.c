@@ -44,7 +44,7 @@
 
 
 bool running = true;
-static char *conf_file_name = PACKAGE_NAME".ini";
+static char *conf_file_name = PACKAGE_NAME".conf";
 static char *pid_file = "/var/lock/"PACKAGE_NAME;
 static int  pid_fd = -1;
 static char *app_name = PACKAGE_NAME;

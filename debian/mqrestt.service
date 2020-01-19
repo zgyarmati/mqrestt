@@ -3,7 +3,7 @@ Description=MQTT-REST bridge
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/mqrestt -c /etc/mqrestt.ini
+ExecStart=/usr/bin/mqrestt -c /etc/mqrestt.conf
 
 [Install]
 WantedBy=multi-user.target

@@ -36,7 +36,7 @@
 
 cfg_t *cfg = NULL;;
 /*
- * parses the ini file, and returns a pointer to a
+ * parses the config file, and returns a pointer to a
  * dynamically allocated instance of the
  * configuration struct with the config values
  * The caller supposed to free up the returned
@@ -49,25 +49,24 @@ init_config(const char*filepath)
 {
     Configuration *retval = malloc(sizeof(Configuration));
 
-    static cfg_opt_t unit_opts[] = {
+    static cfg_opt_t unit_opts[] =
+    {
         CFG_STR("webservice_baseurl", "localhost", CFGF_NONE),
         CFG_STR("mqtt_topic", "default_topic", CFGF_NONE),
         CFG_BOOL("enabled", true, CFGF_NONE),
         CFG_END()
     };
+
     cfg_opt_t opts[] = {
         //logging
         CFG_STR("logtarget", "stdout", CFGF_NONE),
         CFG_STR("logfile", "mgrestt.log", CFGF_NONE),
         CFG_STR("logfacility", "local0", CFGF_NONE),
         CFG_STR("loglevel", "fatal", CFGF_NONE),
-
-        CFG_STR("webservice_baseurl", "localhost", CFGF_NONE),
-
+        // top level mqtt broker options
         CFG_STR("mqtt_broker_host", "localhost", CFGF_NONE),
         CFG_INT("mqtt_broker_port", 1883, CFGF_NONE),
 
-        CFG_STR("mqtt_topic", "-----", CFGF_NONE),
         CFG_INT("mqtt_keepalive", 30, CFGF_NONE),
         CFG_BOOL("mqtt_tls", false, CFGF_NONE),
         CFG_STR("mqtt_cafile", "-----", CFGF_NONE),
@@ -82,6 +81,7 @@ init_config(const char*filepath)
         CFG_SEC("unit", unit_opts, CFGF_MULTI | CFGF_TITLE),
         CFG_END()
     };
+
 
     cfg = cfg_init(opts, 0);
     cfg_parse(cfg, filepath);
@@ -100,18 +100,13 @@ init_config(const char*filepath)
     retval->logfacility = cfg_getstr(cfg,"logfacility");
     retval->loglevel = cfg_getstr(cfg,"loglevel");
     //application
-    //webservice
-    //retval->webservice_baseurl = cfg_getstr(cfg,"webservice_baseurl");
+   
     //MQTT
     retval->mqtt_broker_host = cfg_getstr(cfg,"mqtt_broker_host");
     retval->mqtt_broker_port = cfg_getint(cfg,"mqtt_broker_port");
-
-    //retval->mqtt_topic = cfg_getstr(cfg,"mqtt_topic");
-    
     retval->mqtt_keepalive = cfg_getint(cfg,"mqtt_keepalive");
-   
-    retval->mqtt_tls = cfg_getbool(cfg,"mqtt_tls");
 
+    retval->mqtt_tls = cfg_getbool(cfg,"mqtt_tls");
     retval->mqtt_cafile = cfg_getstr(cfg,"mqtt_cafile");
     retval->mqtt_capath = cfg_getstr(cfg,"mqtt_capath");
     retval->mqtt_certfile = cfg_getstr(cfg,"mqtt_certfile");
