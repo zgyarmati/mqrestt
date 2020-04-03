@@ -4,11 +4,6 @@ mqrestt
 MQtt REST Translator, a MQTT<->REST bridge dameon
 
 
-NOTES
-======
-https://mosquitto.org/api/files/mosquitto-h.html
-
-
 ROADMAP
 =======
 0.1:
@@ -23,3 +18,4 @@ ROADMAP
 Bookmarks
 ========
 https://iot.stackexchange.com/questions/3763/restapi-and-mqtt-broker
+https://mosquitto.org/api/files/mosquitto-h.html
