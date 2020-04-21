@@ -16,13 +16,7 @@
  *
  *   Copyright  Zoltan Gyarmati <zgyarmati@zgyarmati.de> 2020
  */
-#ifndef MQTT_CURL_H
-#define MQTT_CURL_H
-
-#include <mosquitto.h>
-#include "configuration.h"
-
-struct mosquitto* mqtt_curl_init(UnitConfiguration *config);
-bool mqtt_curl_connect(struct mosquitto *mosq, Configuration *config);
-
+#ifndef REST2MQTT_UNIT_H
+#define REST2MQTT_UNIT_H
+void *rest2mqtt_unit_run(void *configdata);
 #endif

@@ -38,6 +38,7 @@ LIBCURL_CHECK_CONFIG([yes],[],[],[AC_MSG_ERROR([libcurl development files requir
 
 PKG_PROG_PKG_CONFIG(0.26)
 PKG_CHECK_MODULES([libconfuse], [libconfuse])
+PKG_CHECK_MODULES([libmicrohttpd], [libmicrohttpd])
 
 # check for doc generating tools
 AC_CHECK_PROGS([A2X], [a2x])

@@ -56,11 +56,27 @@ typedef struct
     const char* webservice_baseurl;
     const char* mqtt_topic;
     Configuration *common_configuration;
-} UnitConfiguration;
+} Mqtt2RestUnitConfiguration;
+
+
+/* This struct holds the configuration of 
+ * one REST to MQTT brifge unit. 
+ * It also has a reference to the common config items.
+ * This struct passed to the worker threads
+ */
+typedef struct
+{
+    const char* unit_name;
+    bool        enabled;
+    int         listen_port;
+    const char* mqtt_topic_root;
+    Configuration *common_configuration;
+} Rest2MqttUnitConfiguration;
 
 
 Configuration *init_config(const char*filepath);
-int get_unitconfigs(UnitConfiguration *configarray[],  const int max_size);
+int get_mqtt2rest_unitconfigs(Mqtt2RestUnitConfiguration *configarray[],  const int max_size);
+int get_rest2mqtt_unitconfigs(Rest2MqttUnitConfiguration *configarray[],  const int max_size);
 void free_config();
 
 #endif

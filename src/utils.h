@@ -16,8 +16,23 @@
  *
  *   Copyright  Zoltan Gyarmati <zgyarmati@zgyarmati.de> 2020
  */
-#ifndef MQRESTT_UNIT_H
-#define MQRESTT_UNIT_H
 
-void *mqrestt_unit_run(void *configdata);
+#ifndef UTILS_H
+#define UTILS_H
+#include <stdlib.h>
+#include <sys/types.h>
+#include <stdbool.h>
+#include <errno.h>
+#include <limits.h>
+
+bool parseInt(const char *str, int *val);
+
+void* safe_malloc(size_t n, unsigned long line);
+#define SAFEMALLOC(n) safe_malloc(n, __LINE__)
+void* safe_realloc(void *ptr, size_t n, unsigned long line);
+#define SAFEREALLOC(ptr, n) safe_realloc(ptr, n, __LINE__)
+
+
 #endif
+
+
