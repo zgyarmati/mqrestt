@@ -57,6 +57,14 @@ init_config(const char*filepath)
         CFG_END()
     };
 
+    static cfg_opt_t rest2mqtt_unit_opts[] =
+    {
+        CFG_INT("listen_port", 8888, CFGF_NONE),
+        CFG_STR("mqtt_topic_root", "default_topic", CFGF_NONE),
+        CFG_BOOL("enabled", true, CFGF_NONE),
+        CFG_END()
+    };
+
     cfg_opt_t opts[] = {
         //logging
         CFG_STR("logtarget", "stdout", CFGF_NONE),
@@ -79,6 +87,7 @@ init_config(const char*filepath)
         CFG_STR("mqtt_pw", "-----", CFGF_NONE),
 
         CFG_SEC("unit", unit_opts, CFGF_MULTI | CFGF_TITLE),
+        CFG_SEC("rest2mqtt_unit", rest2mqtt_unit_opts, CFGF_MULTI | CFGF_TITLE),
         CFG_END()
     };
 
@@ -173,6 +182,38 @@ get_unitconfigs(UnitConfiguration *configarray[], const int max_size)
         configarray[i]->enabled = cfg_getbool(unit,"enabled");
     }
     return unit_count;
+}
+
+get_rest2mqtt_unitconfigs(Rest2MqttUnitConfiguration *configarray[],
+                          const int max_size)
+{
+    assert(cfg != NULL);
+    const int unit_count = cfg_size(cfg,"rest2mqtt_unit");
+    if (max_size < unit_count)
+    {
+        fprintf(stderr,"config error: configarray too small\n");
+        return -1;
+    }
+    for(int i = 0; i < unit_count; i++)
+    {
+        configarray[i] = malloc (sizeof(Rest2MqttUnitConfiguration));
+        if (configarray[i] == NULL)
+        {
+            fprintf(stderr,"failed to allocate memory\n");
+            return -1;
+        }
+        cfg_t *unit = cfg_getnsec(cfg, "rest2mqtt_unit", i);
+
+        INFO("UNIT: %s", cfg_title(unit));
+        configarray[i]->unit_name = cfg_title(unit);
+
+        INFO("\tListen port: %d", cfg_getint(unit, "listen_port"));
+        configarray[i]->listen_port = cfg_getint(unit, "listen_port");
+
+        configarray[i]->mqtt_topic_root = cfg_getstr(unit, "mqtt_topic_root");
+        INFO("\tTOPIC ROOT: %s", configarray[i]->mqtt_topic_root);
+        configarray[i]->enabled = cfg_getbool(unit,"enabled");
+    }
 }
 
 void free_config()

@@ -40,6 +40,7 @@
 #include "configuration.h"
 #include "logging.h"
 #include "mqrestt_unit.h"
+#include "rest2mqtt_unit.h"
 
 
 
@@ -262,48 +263,69 @@ int main(int argc, char *argv[])
     mosquitto_lib_init();
 
     // setting up storage for the unit configuration list
-    int count = MAX_UNIT_NUM;
+    int mqtt2rest_count = MAX_UNIT_NUM;
     UnitConfiguration *unit_configs[MAX_UNIT_NUM] = {NULL};
-    DEBUG("S %d\n",sizeof(unit_configs));
-    count = get_unitconfigs(unit_configs, count);
+    DEBUG("Number of mqtt2rest units: %d\n",sizeof(unit_configs));
+    mqtt2rest_count = get_unitconfigs(unit_configs, mqtt2rest_count);
 
-    if (count < 0)
+    int rest2mqtt_count = MAX_UNIT_NUM;
+    Rest2MqttUnitConfiguration *rest2mqtt_unit_configs[MAX_UNIT_NUM] = {NULL};
+    DEBUG("Number of rest2mqtt units: %d\n",sizeof(unit_configs));
+    rest2mqtt_count = get_rest2mqtt_unitconfigs(rest2mqtt_unit_configs, rest2mqtt_count);
+
+    if (mqtt2rest_count < 0 || rest2mqtt_count < 0)
     {
         FATAL("Failed to init unit configs!");
         return EXIT_FAILURE;
     }
-    if (count == 0)
+    if ((mqtt2rest_count + rest2mqtt_count) == 0)
     {
         ERROR("No units found. Please check configuration");
         return EXIT_FAILURE;
     }
 
-    // create a thread for each unit
-    pthread_t threads[count];
+    // create a thread for each mqtt2rest unit
+    pthread_t threads[mqtt2rest_count];
     int threadcounter = 0;
-    for (int i=0;i<count;i++)
+    for (int i=0;i<mqtt2rest_count;i++)
     {
         if (!unit_configs[i]->enabled){
             continue;
         }
-        // setting the commong config in each unit configuration
+        // setting the common config in each unit configuration
         unit_configs[i]->common_configuration = config;
-
         int ret = pthread_create(&threads[threadcounter++], NULL, mqrestt_unit_run, (void*) unit_configs[i]);
         if(ret) {
             fprintf(stderr,"Error - pthread_create() return code: %d\n",ret);
             exit(EXIT_FAILURE);
         }
     }
+
+
+    // create a thread for each rest2mqtt unit
+    for (int i=0;i<rest2mqtt_count;i++)
+    {
+       int ret = pthread_create(&threads[threadcounter++], NULL, rest2mqtt_unit_run, (void*) rest2mqtt_unit_configs[i]);
+        if(ret) {
+            fprintf(stderr,"Error - pthread_create() return code: %d\n",ret);
+            exit(EXIT_FAILURE);
+        }
+    }
+    DEBUG("Started %d units",threadcounter);
+
     // waiting for all of the threads to exit, if ever
     for (int i = 0; i < threadcounter; i++) {
         pthread_join(threads[i], 0);
     }
 
-    // frreing up the per-unit configs
-    for (int i=0; i < count; i++)
+    // freeing up the per-unit configs
+    for (int i=0; i < mqtt2rest_count; i++)
     {
         free(unit_configs[i]);
+    }
+    for (int i=0; i < rest2mqtt_count; i++)
+    {
+        free(rest2mqtt_unit_configs[i]);
     }
     // free up the main config
     free_config();
