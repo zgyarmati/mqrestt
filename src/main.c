@@ -39,7 +39,7 @@
 #include <config.h>
 #include "configuration.h"
 #include "logging.h"
-#include "mqrestt_unit.h"
+#include "mqtt2rest_unit.h"
 #include "rest2mqtt_unit.h"
 
 
@@ -264,9 +264,9 @@ int main(int argc, char *argv[])
 
     // setting up storage for the unit configuration list
     int mqtt2rest_count = MAX_UNIT_NUM;
-    UnitConfiguration *unit_configs[MAX_UNIT_NUM] = {NULL};
+    Mqtt2RestUnitConfiguration *unit_configs[MAX_UNIT_NUM] = {NULL};
     DEBUG("Number of mqtt2rest units: %d\n",sizeof(unit_configs));
-    mqtt2rest_count = get_unitconfigs(unit_configs, mqtt2rest_count);
+    mqtt2rest_count = get_mqtt2rest_unitconfigs(unit_configs, mqtt2rest_count);
 
     int rest2mqtt_count = MAX_UNIT_NUM;
     Rest2MqttUnitConfiguration *rest2mqtt_unit_configs[MAX_UNIT_NUM] = {NULL};
@@ -294,7 +294,7 @@ int main(int argc, char *argv[])
         }
         // setting the common config in each unit configuration
         unit_configs[i]->common_configuration = config;
-        int ret = pthread_create(&threads[threadcounter++], NULL, mqrestt_unit_run, (void*) unit_configs[i]);
+        int ret = pthread_create(&threads[threadcounter++], NULL, mqtt2rest_unit_run, (void*) unit_configs[i]);
         if(ret) {
             fprintf(stderr,"Error - pthread_create() return code: %d\n",ret);
             exit(EXIT_FAILURE);

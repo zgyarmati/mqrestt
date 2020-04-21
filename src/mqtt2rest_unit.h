@@ -16,8 +16,8 @@
  *
  *   Copyright  Zoltan Gyarmati <zgyarmati@zgyarmati.de> 2020
  */
-#ifndef MQRESTT_UNIT_H
-#define MQRESTT_UNIT_H
+#ifndef MQTT2REST_UNIT_H
+#define MQTT2REST_UNIT_H
 
-void *mqrestt_unit_run(void *configdata);
+void *mqtt2rest_unit_run(void *configdata);
 #endif

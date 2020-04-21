@@ -30,10 +30,10 @@
 #include "logging.h"
 extern bool running;
 
-void *mqrestt_unit_run(void *configdata)
+void *mqtt2rest_unit_run(void *configdata)
 {
     assert(configdata != NULL);
-    UnitConfiguration *unitconfig = (UnitConfiguration*)configdata;
+    Mqtt2RestUnitConfiguration *unitconfig = (Mqtt2RestUnitConfiguration*)configdata;
     INFO("Starting thread for unit: %s", unitconfig->unit_name);
     Configuration *config = (Configuration *)unitconfig->common_configuration;
     assert(config != NULL);

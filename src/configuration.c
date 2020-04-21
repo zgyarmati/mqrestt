@@ -152,7 +152,7 @@ init_config(const char*filepath)
 }
 
 int
-get_unitconfigs(UnitConfiguration *configarray[], const int max_size)
+get_mqtt2rest_unitconfigs(Mqtt2RestUnitConfiguration *configarray[], const int max_size)
 {
     assert(cfg != NULL);
     const int unit_count = cfg_size(cfg,"unit");
@@ -163,7 +163,7 @@ get_unitconfigs(UnitConfiguration *configarray[], const int max_size)
     }
     for(int i = 0; i < unit_count; i++)
     {
-        configarray[i] = malloc (sizeof(UnitConfiguration));
+        configarray[i] = malloc (sizeof(Mqtt2RestUnitConfiguration));
         if (configarray[i] == NULL)
         {
             fprintf(stderr,"failed to allocate memory\n");

@@ -56,7 +56,7 @@ typedef struct
     const char* webservice_baseurl;
     const char* mqtt_topic;
     Configuration *common_configuration;
-} UnitConfiguration;
+} Mqtt2RestUnitConfiguration;
 
 
 /* This struct holds the configuration of 
@@ -75,7 +75,7 @@ typedef struct
 
 
 Configuration *init_config(const char*filepath);
-int get_unitconfigs(UnitConfiguration *configarray[],  const int max_size);
+int get_mqtt2rest_unitconfigs(Mqtt2RestUnitConfiguration *configarray[],  const int max_size);
 int get_rest2mqtt_unitconfigs(Rest2MqttUnitConfiguration *configarray[],  const int max_size);
 void free_config();
 

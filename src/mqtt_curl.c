@@ -30,7 +30,7 @@
 #define MAX_TOPIC_LENGTH 128
 
 int
-rest_post(UnitConfiguration *config, const char *url, const char *payload )
+rest_post(Mqtt2RestUnitConfiguration *config, const char *url, const char *payload )
 {
     CURL *curl;
     CURLcode res;
@@ -75,7 +75,7 @@ void
 mqtt_cb_msg(struct mosquitto *mosq, void *userdata,
                   const struct mosquitto_message *msg)
 {
-    UnitConfiguration *config = (UnitConfiguration *)userdata;
+    Mqtt2RestUnitConfiguration *config = (Mqtt2RestUnitConfiguration *)userdata;
     //tailoring the url
     char *url = msg->topic + strlen(config->mqtt_topic) + 1; // +1 the '/'
     DEBUG("Received msg on topic: %s\n", msg->topic);
@@ -90,7 +90,7 @@ mqtt_cb_msg(struct mosquitto *mosq, void *userdata,
 void
 mqtt_cb_connect(struct mosquitto *mosq, void *userdata, int result)
 {
-    UnitConfiguration *c = (UnitConfiguration *)userdata;
+    Mqtt2RestUnitConfiguration *c = (Mqtt2RestUnitConfiguration *)userdata;
 
     pid_t tid = pthread_self();
     DEBUG("MQTT connect, UNIT: %s, thread: %ld", c->unit_name, (long)tid);
@@ -110,7 +110,7 @@ void
 mqtt_cb_subscribe(struct mosquitto *mosq, void *userdata, int mid,
                         int qos_count, const int *granted_qos)
 {
-    UnitConfiguration *c = (UnitConfiguration *)userdata;
+    Mqtt2RestUnitConfiguration *c = (Mqtt2RestUnitConfiguration *)userdata;
     INFO("Unit [%s]: Subscribed (mid: %d): %d", c->unit_name, mid, granted_qos[0]);
     for(int i=1; i<qos_count; i++){
         INFO("\t %d", granted_qos[i]);
@@ -120,7 +120,7 @@ mqtt_cb_subscribe(struct mosquitto *mosq, void *userdata, int mid,
 void
 mqtt_cb_disconnect(struct mosquitto *mosq, void *userdata, int rc)
 {
-    UnitConfiguration *c = (UnitConfiguration *)userdata;
+    Mqtt2RestUnitConfiguration *c = (Mqtt2RestUnitConfiguration *)userdata;
     WARNING("Unit [%s] MQTT disconnect, error: %d: %s",c->unit_name, rc, mosquitto_strerror(rc));
 }
 
@@ -132,7 +132,7 @@ void
 mqtt_cb_log(struct mosquitto *mosq, void *userdata,
                   int level, const char *str)
 {
-    UnitConfiguration *c = (UnitConfiguration *)userdata;
+    Mqtt2RestUnitConfiguration *c = (Mqtt2RestUnitConfiguration *)userdata;
     switch(level){
         case MOSQ_LOG_DEBUG:
             DEBUG("Unit [%s]: %s",c->unit_name, str);
@@ -153,7 +153,7 @@ mqtt_cb_log(struct mosquitto *mosq, void *userdata,
 }
 
 struct mosquitto*
-mqtt_curl_init(UnitConfiguration *config)
+mqtt_curl_init(Mqtt2RestUnitConfiguration *config)
 {
     struct mosquitto *mosq;
     bool clean_session = true;
