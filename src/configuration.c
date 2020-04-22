@@ -184,6 +184,7 @@ get_mqtt2rest_unitconfigs(Mqtt2RestUnitConfiguration *configarray[], const int m
     return unit_count;
 }
 
+int
 get_rest2mqtt_unitconfigs(Rest2MqttUnitConfiguration *configarray[],
                           const int max_size)
 {

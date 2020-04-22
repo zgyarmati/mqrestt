@@ -44,7 +44,7 @@
 
 
 
-bool running = true;
+volatile bool running = true;
 static char *conf_file_name = PACKAGE_NAME".conf";
 static char *pid_file = "/var/lock/"PACKAGE_NAME;
 static int  pid_fd = -1;
@@ -305,7 +305,12 @@ int main(int argc, char *argv[])
     // create a thread for each rest2mqtt unit
     for (int i=0;i<rest2mqtt_count;i++)
     {
-       int ret = pthread_create(&threads[threadcounter++], NULL, rest2mqtt_unit_run, (void*) rest2mqtt_unit_configs[i]);
+        if (!rest2mqtt_unit_configs[i]->enabled)
+        {
+            continue;
+        }
+        rest2mqtt_unit_configs[i]->common_configuration = config;
+        int ret = pthread_create(&threads[threadcounter++], NULL, rest2mqtt_unit_run, (void*) rest2mqtt_unit_configs[i]);
         if(ret) {
             fprintf(stderr,"Error - pthread_create() return code: %d\n",ret);
             exit(EXIT_FAILURE);

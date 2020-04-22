@@ -17,7 +17,7 @@
  *   Copyright  Zoltan Gyarmati <zgyarmati@zgyarmati.de> 2020
  */
 
-#include "mqtt_curl.h"
+#include "mqtt_client.h"
 #include <assert.h>
 
 #include <errno.h>
@@ -25,10 +25,68 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <curl/curl.h>
+#include <sys/types.h>
+#include <string.h>
 
 #include "configuration.h"
 #include "logging.h"
 extern bool running;
+
+static int
+rest_post(Mqtt2RestUnitConfiguration *config, const char *url, 
+          const char *payload )
+{
+    CURL *curl;
+    CURLcode res;
+    int retval = 0;
+    const int len = strlen(config->webservice_baseurl);
+    DEBUG("len url: %d", strlen(url));
+    #define URL_MAX_SIZE 256
+    char full_url[URL_MAX_SIZE];
+    strncpy(full_url,config->webservice_baseurl, URL_MAX_SIZE);
+    if(full_url[len-1] != '/'){
+        DEBUG("Need to append a '/'");
+        full_url[len] = '/';
+        full_url[len + 1] = '\0';
+    }
+    strncat(full_url,url,URL_MAX_SIZE-len-1);
+    INFO("FULL URL: %s", full_url);
+
+    curl = curl_easy_init();
+    if(curl) {
+        curl_easy_setopt(curl, CURLOPT_URL, full_url);
+        if (payload == NULL){
+            curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
+        }
+        else {
+            curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload);
+        }
+        res = curl_easy_perform(curl);
+        if(res != CURLE_OK){
+            ERROR("curl_easy_perform() failed: %s", curl_easy_strerror(res));
+            retval = -1;
+        }
+        curl_easy_cleanup(curl);
+    }
+    return retval;
+}
+
+void
+on_mqtt_msg(const char* topic, const char* msg, void *ctx)
+{
+    INFO("Got MQTT msg on topic %s",topic);
+    Mqtt2RestUnitConfiguration *unitconfig = (Mqtt2RestUnitConfiguration*)ctx;
+    //tailoring the url
+    char *url = topic + strlen(unitconfig->mqtt_topic) + 1; // +1 the '/'
+    //calling the URL with the payload
+    if(msg != NULL)
+    {
+        DEBUG("Payload: %s", msg);
+    }
+    rest_post(unitconfig, url, msg);
+}
+
 
 void *mqtt2rest_unit_run(void *configdata)
 {
@@ -38,53 +96,54 @@ void *mqtt2rest_unit_run(void *configdata)
     Configuration *config = (Configuration *)unitconfig->common_configuration;
     assert(config != NULL);
 
-    //set up mosquitto
-    struct mosquitto *mosq;
-    mosq = mqtt_curl_init(unitconfig);
-    if (mosq == NULL){
+    //set up the mqtt client config
+    MqttClientConfiguration mqtt_config;
+    mqtt_config.label = unitconfig->unit_name;
+    mqtt_config.topic = unitconfig->mqtt_topic;
+    mqtt_config.broker_host = config->mqtt_broker_host;
+    mqtt_config.broker_port = config->mqtt_broker_port;
+    mqtt_config.keepalive = config->mqtt_keepalive;
+    mqtt_config.tls_enabled = config->mqtt_tls;
+    mqtt_config.cafile = config->mqtt_cafile;
+    mqtt_config.capath = config->mqtt_capath;
+    mqtt_config.certfile = config->mqtt_certfile;
+    mqtt_config.keyfile = config->mqtt_keyfile;
+    mqtt_config.user_pw_auth_enabled = config->mqtt_user_pw;
+    mqtt_config.user = config->mqtt_user;
+    mqtt_config.pw = config->mqtt_pw;
+    mqtt_config.callback_context = (void*)unitconfig;
+    mqtt_config.msg_callback = &on_mqtt_msg;
+
+    struct MqttClientHandle *mqtt = mqtt_client_init(&mqtt_config);
+    if (mqtt == NULL){
         FATAL("Failed to init MQTT client");
         return NULL;
     }
-    bool mqtt_connected = mqtt_curl_connect(mosq, config);
-    //pfd[0] is for the mosquitto socket, pfd[1] is for the mq file descriptor
+    mqtt_client_connect(mqtt);
     struct pollfd pfd[1];
-    const int nfds = sizeof(pfd)/sizeof(struct pollfd);
+    nfds_t nfds = sizeof(pfd)/sizeof(struct pollfd);
     const int poll_timeout = config->mqtt_keepalive/2*1000;
 
-    while (running) {
-        if (!mqtt_connected){
+    while (running)
+    {
+        if (!mqtt_client_connected(mqtt))
+        {
             DEBUG("Trying to reconnect...");
-            if (mosquitto_reconnect(mosq) == MOSQ_ERR_SUCCESS){
-                mqtt_connected = true;
+            if (!mqtt_client_reconnect(mqtt))
+            {
+                continue;
             }
         }
-        int mosq_fd = mosquitto_socket(mosq); //this might change?
-        pfd[0].fd = mosq_fd;
-        pfd[0].events = POLLIN;
-        if (mosquitto_want_write(mosq)){
-            //printf("Set POLLOUT\n");
-            pfd[0].events |= POLLOUT;
-        }
+        mqtt_client_get_pollfds(mqtt,pfd,&nfds);
         if(poll(pfd, nfds, poll_timeout) < 0) {
             FATAL("Poll() failed with <%s>, exiting",strerror(errno));
             return NULL;
         }
-        // first checking the mosquitto socket
-        if(pfd[0].revents & POLLOUT) {
-            mosquitto_loop_write(mosq,1);
-        }
-        if(pfd[0].revents & POLLIN){
-            int ret = mosquitto_loop_read(mosq, 1);
-            if (ret == MOSQ_ERR_CONN_LOST ||
-                ret == MOSQ_ERR_NO_CONN) {
-                mqtt_connected = false;
-            }
-        }
-        mosquitto_loop_misc(mosq);
+        mqtt_client_loop(mqtt,pfd[0].revents & POLLIN,
+                              pfd[0].revents & POLLOUT);
     }
 
 
-    mosquitto_destroy(mosq);
     DEBUG("Unit thread %s exiting...\n", unitconfig->unit_name);
     return NULL;
 }
