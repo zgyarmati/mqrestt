@@ -1,0 +1,8 @@
+image: "ubuntu:18.04"
+
+before_script:
+  - apt-get update -qq && apt-get install -y -qq libcurl-dev asciidoc dblatex libmosquitto-dev libconfuse-dev libmicrohttpd-dev autoconf-archive
+
+build:
+    script: ./autogen.sh && ./configure && make -j
+
