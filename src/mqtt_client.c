@@ -88,6 +88,10 @@ mqtt_cb_connect(struct mosquitto *mosq, void *userdata, int result)
     assert(config != NULL);
 
     DEBUG("MQTT connect, UNIT: %s", config->label);
+    if (!config->topic)
+    {
+        return;
+    }
     char buffer[MAX_TOPIC_LENGTH];
     if(snprintf(buffer,MAX_TOPIC_LENGTH,"%s/#",config->topic) >= MAX_TOPIC_LENGTH)
     {
@@ -194,10 +198,16 @@ mqtt_client_reconnect(MqttClientHandle *h)
 }
 
 bool
-mqtt_client_publish(MqttClientHandle *h, const char* topic, const char *msg)
+mqtt_client_publish(struct MqttClientHandle *h, const char* topic, const char *msg,int qos)
 {
+    INFO("Publishing on topic %s",topic+1);
     assert(h != NULL);
-    return true;
+    int ret = mosquitto_publish(h->mosq,NULL,topic+1,strlen(msg),
+                     (void*)msg,qos,false);
+    if (ret != MOSQ_ERR_SUCCESS){
+        WARNING("Failed to publish, reason:  %s",mosquitto_strerror(ret));
+    }
+    return (ret == MOSQ_ERR_SUCCESS);
 }
 
 nfds_t

@@ -215,6 +215,7 @@ get_rest2mqtt_unitconfigs(Rest2MqttUnitConfiguration *configarray[],
         INFO("\tTOPIC ROOT: %s", configarray[i]->mqtt_topic_root);
         configarray[i]->enabled = cfg_getbool(unit,"enabled");
     }
+    return unit_count;
 }
 
 void free_config()

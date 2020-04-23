@@ -35,7 +35,7 @@
 #include <assert.h>
 
 #include <microhttpd.h>
-#include <mosquitto.h>
+#include "mqtt_client.h"
 
 // from main.c
 extern bool running;
@@ -79,12 +79,18 @@ answer_to_connection (void *cls, struct MHD_Connection *connection,
     {
         INFO("GOT POST continuation, data: %s",upload_data);
         *upload_data_size = 0;
+
+        // todo move this to the else branch
+        const char *qos_val = MHD_lookup_connection_value(connection,MHD_GET_ARGUMENT_KIND,"qos");
+        INFO("QOS: %s",qos_val);
+        int qos;
+        parseInt(qos_val,&qos);
+        mqtt_client_publish((struct MqttClientHandle*)cls, 
+                url, upload_data,qos);
         return MHD_YES;
     }
     else
     {
-        const char *qos_val = MHD_lookup_connection_value(connection,MHD_GET_ARGUMENT_KIND,"qos");
-        INFO("QOS: %s",qos_val);
 
         struct MHD_Response *response = MHD_create_response_from_buffer (3, "OK",
                 MHD_RESPMEM_PERSISTENT);
@@ -97,49 +103,69 @@ answer_to_connection (void *cls, struct MHD_Connection *connection,
 
 void *rest2mqtt_unit_run(void *configdata)
 {
-#if 0
     assert(configdata != NULL);
     Rest2MqttUnitConfiguration *unitconfig = (Rest2MqttUnitConfiguration*)configdata;
     Configuration *config = (Configuration *)unitconfig->common_configuration;
     assert(config != NULL);
     INFO("Starting REST->MQTT unit: %s", unitconfig->unit_name);
+    //set up the mqtt client config
+    MqttClientConfiguration mqtt_config;
+    mqtt_config.label = unitconfig->unit_name;
+    mqtt_config.topic = NULL;
+    mqtt_config.broker_host = config->mqtt_broker_host;
+    mqtt_config.broker_port = config->mqtt_broker_port;
+    mqtt_config.keepalive = config->mqtt_keepalive;
+    mqtt_config.tls_enabled = config->mqtt_tls;
+    mqtt_config.cafile = config->mqtt_cafile;
+    mqtt_config.capath = config->mqtt_capath;
+    mqtt_config.certfile = config->mqtt_certfile;
+    mqtt_config.keyfile = config->mqtt_keyfile;
+    mqtt_config.user_pw_auth_enabled = config->mqtt_user_pw;
+    mqtt_config.user = config->mqtt_user;
+    mqtt_config.pw = config->mqtt_pw;
+    mqtt_config.callback_context = NULL;
+    mqtt_config.msg_callback = NULL;
 
-    struct MHD_Daemon *daemon;
-    struct timeval tv;
-    fd_set rs;
-    fd_set ws;
-    fd_set es;
-    int max;
-    daemon = MHD_start_daemon (MHD_USE_DEBUG,
-            unitconfig->listen_port, 
-            NULL, NULL,
-            &answer_to_connection, NULL,
-            MHD_OPTION_NOTIFY_COMPLETED, request_completed,
-            NULL, MHD_OPTION_END);
-
-
-    //set up mosquitto
-    struct mosquitto *mosq;
-    mosq = mqtt_curl_init(unitconfig);
-    if (mosq == NULL){
+    struct MqttClientHandle *mqtt = mqtt_client_init(&mqtt_config);
+    if (mqtt == NULL){
         FATAL("Failed to init MQTT client");
         return NULL;
     }
-    bool mqtt_connected = mqtt_curl_connect(mosq, config);
+    mqtt_client_connect(mqtt);
+    struct pollfd pfd[1];
+    nfds_t nfds = sizeof(pfd)/sizeof(struct pollfd);
+    const int poll_timeout = config->mqtt_keepalive/2*1000;
 
+    //microhttpd setup
+    struct MHD_Daemon *daemon;
+    daemon = MHD_start_daemon (MHD_USE_DEBUG,
+            unitconfig->listen_port, 
+            NULL, NULL,
+            &answer_to_connection, (void*)mqtt,
+            MHD_OPTION_NOTIFY_COMPLETED, request_completed,
+            NULL, MHD_OPTION_END);
     while(running)
     {
-        if (!mqtt_connected){
+        if (!mqtt_client_connected(mqtt))
+        {
             DEBUG("Trying to reconnect...");
-            if (mosquitto_reconnect(mosq) == MOSQ_ERR_SUCCESS){
-                mqtt_connected = true;
+            if (!mqtt_client_reconnect(mqtt))
+            {
+                continue;
             }
         }
-        int mosq_fd = mosquitto_socket(mosq); //this might change?
+
+        mqtt_client_get_pollfds(mqtt,pfd,&nfds);
+        int mosq_fd = pfd[0].fd; 
+        // ToDo migrate to poll
+        struct timeval tv;
+        fd_set rs;
+        fd_set ws;
+        fd_set es;
 
         tv.tv_sec = 1;
         tv.tv_usec = 0;
-        max = 0;
+        int max = 0;
         FD_ZERO (&rs);
         FD_ZERO (&ws);
         FD_ZERO (&es);
@@ -147,32 +173,19 @@ void *rest2mqtt_unit_run(void *configdata)
         {
             FATAL("Failed to get MHD fdset");
         }
-
-        //
         if (mosq_fd > max) max = mosq_fd;
         FD_SET(mosq_fd,&rs);
-        if (mosquitto_want_write(mosq)){
+        if (pfd[0].events & POLLOUT)
+        {
             FD_SET(mosq_fd,&ws);
         }
         select (max + 1, &rs, &ws, &es, &tv);
         MHD_run (daemon);
+        mqtt_client_loop(mqtt,FD_ISSET(mosq_fd,&rs),
+                              FD_ISSET(mosq_fd,&ws));
     }
     MHD_stop_daemon (daemon);
+    mqtt_client_destroy(mqtt);
 
-#if 0
-    daemon = MHD_start_daemon (MHD_USE_AUTO | MHD_USE_INTERNAL_POLLING_THREAD,
-            unitconfig->listen_port, 
-            NULL, NULL,
-            &answer_to_connection, NULL,
-            MHD_OPTION_NOTIFY_COMPLETED, request_completed,
-            NULL, MHD_OPTION_END);
-    while(running)  sleep(1); //ToDo figure out how to run MHD with own event loop
-    MHD_stop_daemon (daemon);
-#endif
     return 0;
-#endif
-    while(running)
-    {
-        sleep(1);
-    }
 }

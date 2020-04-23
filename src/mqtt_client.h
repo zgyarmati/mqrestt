@@ -60,7 +60,7 @@ struct MqttClientHandle *mqtt_client_init(MqttClientConfiguration *config);
 bool mqtt_client_connect(struct MqttClientHandle *h);
 bool mqtt_client_connected(struct MqttClientHandle *h);
 bool mqtt_client_reconnect(struct MqttClientHandle *h);
-bool mqtt_client_publish(struct MqttClientHandle *h, const char *topic, const char *msg);
+bool mqtt_client_publish(struct MqttClientHandle *h, const char *topic, const char *msg,int qos);
 nfds_t mqtt_client_get_pollfds(struct MqttClientHandle *h, struct pollfd *pfds, nfds_t *count);
 void mqtt_client_loop(struct MqttClientHandle *h,const bool read, const bool write);
 void mqtt_client_destroy(struct MqttClientHandle *h);
