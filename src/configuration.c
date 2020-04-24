@@ -45,7 +45,7 @@ cfg_t *cfg = NULL;;
  * and the error supposed to be printed on stderr
  */
 Configuration *
-init_config(const char*filepath)
+init_config(const char *filepath, bool dump)
 {
     Configuration *retval = malloc(sizeof(Configuration));
 
@@ -96,12 +96,17 @@ init_config(const char*filepath)
     cfg_parse(cfg, filepath);
 
 
-    if (cfg==NULL) {
+    if (cfg == NULL) {
         fprintf(stderr, "cannot parse file: %s\n", filepath);
         free_config();
         return NULL;
     }
-    cfg_print(cfg, stderr);
+    if (dump)
+    {
+        fprintf(stderr,"Config dump from file: %s\n\n",filepath);
+        cfg_print(cfg, stderr);
+        fprintf(stderr,"\n\n");
+    }
     retval->appname = INISECTION;
     //logging
     retval->logtarget = cfg_getstr(cfg,"logtarget");

@@ -74,7 +74,7 @@ typedef struct
 } Rest2MqttUnitConfiguration;
 
 
-Configuration *init_config(const char*filepath);
+Configuration *init_config(const char *filepath, bool dump);
 int get_mqtt2rest_unitconfigs(Mqtt2RestUnitConfiguration *configarray[],  const int max_size);
 int get_rest2mqtt_unitconfigs(Rest2MqttUnitConfiguration *configarray[],  const int max_size);
 void free_config();

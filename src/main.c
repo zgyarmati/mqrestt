@@ -183,6 +183,7 @@ print_help(void)
     fprintf(stderr,"   -v --version              Print version info\n");
     fprintf(stderr,"   -c --configfile filename  Read configuration from the file\n");
     fprintf(stderr,"   -d --daemon               Daemonize this application\n");
+    fprintf(stderr,"   -p --dump                 Dump the parsed config to stderr and continue running\n");
     fprintf(stderr,"\n");
 }
 
@@ -210,21 +211,26 @@ int main(int argc, char *argv[])
         {"help", no_argument, 0, 'h'},
         {"version", no_argument, 0, 'v'},
         {"daemon", no_argument, 0, 'd'},
+        {"dump", no_argument, 0, 'p'},
         {NULL, 0, 0, 0}
     };
     int value, option_index = 0;
     int start_daemonized = 0;
+    bool dump_config = false;
 
     app_name = argv[0];
 
     /* Try to process all command line arguments */
-    while( (value = getopt_long(argc, argv, "c:dhv", long_options, &option_index)) != -1) {
+    while( (value = getopt_long(argc, argv, "c:dhvp", long_options, &option_index)) != -1) {
         switch(value) {
             case 'c':
                 conf_file_name = strdup(optarg);
                 break;
             case 'd':
                 start_daemonized = 1;
+                break;
+            case 'p':
+                dump_config = true;
                 break;
             case 'h':
                 print_help();
@@ -246,17 +252,18 @@ int main(int argc, char *argv[])
     if(start_daemonized == 1) {
         daemonize();
     }
-    config = init_config(conf_file_name);
+    config = init_config(conf_file_name, dump_config);
     if (config == NULL){
-        fprintf(stderr, "CONFIG ERROR, EXITING!\n");
+        fprintf(stderr, "CONFIG ERROR in %s, EXITING!\n", conf_file_name);
         exit(EXIT_FAILURE);
     }
     if(0 != log_init(config->loglevel, config->logtarget, config->logfile,
               config->logfacility, 0)){
-        fprintf(stderr, "Failed to init logging, exiting\n");
+        fprintf(stderr, "Failed to init logging from config file: %s, exiting\n",
+                        conf_file_name);
         return EXIT_FAILURE;
     }
-    INFO(PACKAGE_NAME" started, pid: %d", getpid());
+    INFO(PACKAGE_NAME" started, pid: %d, config file: %s", getpid(),conf_file_name);
 
     // we need to call this only once, and it's not thread
     // safe, so we do it here
@@ -265,22 +272,20 @@ int main(int argc, char *argv[])
     // setting up storage for the unit configuration list
     int mqtt2rest_count = MAX_UNIT_NUM;
     Mqtt2RestUnitConfiguration *unit_configs[MAX_UNIT_NUM] = {NULL};
-    DEBUG("Number of mqtt2rest units: %d\n",sizeof(unit_configs));
     mqtt2rest_count = get_mqtt2rest_unitconfigs(unit_configs, mqtt2rest_count);
 
     int rest2mqtt_count = MAX_UNIT_NUM;
     Rest2MqttUnitConfiguration *rest2mqtt_unit_configs[MAX_UNIT_NUM] = {NULL};
-    DEBUG("Number of rest2mqtt units: %d\n",sizeof(unit_configs));
     rest2mqtt_count = get_rest2mqtt_unitconfigs(rest2mqtt_unit_configs, rest2mqtt_count);
 
     if (mqtt2rest_count < 0 || rest2mqtt_count < 0)
     {
-        FATAL("Failed to init unit configs!");
+        FATAL("Failed to init unit configs, check config file:",conf_file_name);
         return EXIT_FAILURE;
     }
     if ((mqtt2rest_count + rest2mqtt_count) == 0)
     {
-        ERROR("No units found. Please check configuration");
+        ERROR("No units found. Please check configuration file %s",conf_file_name);
         return EXIT_FAILURE;
     }
 
