@@ -49,7 +49,7 @@ init_config(const char *filepath, bool dump)
 {
     Configuration *retval = malloc(sizeof(Configuration));
 
-    static cfg_opt_t unit_opts[] =
+    static cfg_opt_t mqtt2rest_unit_opts[] =
     {
         CFG_STR("webservice_baseurl", "localhost", CFGF_NONE),
         CFG_STR("mqtt_topic", "default_topic", CFGF_NONE),
@@ -86,7 +86,7 @@ init_config(const char *filepath, bool dump)
         CFG_STR("mqtt_user", "-----", CFGF_NONE),
         CFG_STR("mqtt_pw", "-----", CFGF_NONE),
 
-        CFG_SEC("unit", unit_opts, CFGF_MULTI | CFGF_TITLE),
+        CFG_SEC("mqtt2rest_unit", mqtt2rest_unit_opts, CFGF_MULTI | CFGF_TITLE),
         CFG_SEC("rest2mqtt_unit", rest2mqtt_unit_opts, CFGF_MULTI | CFGF_TITLE),
         CFG_END()
     };
@@ -160,7 +160,7 @@ int
 get_mqtt2rest_unitconfigs(Mqtt2RestUnitConfiguration *configarray[], const int max_size)
 {
     assert(cfg != NULL);
-    const int unit_count = cfg_size(cfg,"unit");
+    const int unit_count = cfg_size(cfg,"mqtt2rest_unit");
     if (max_size < unit_count)
     {
         fprintf(stderr,"config error: configarray too small\n");
@@ -174,7 +174,7 @@ get_mqtt2rest_unitconfigs(Mqtt2RestUnitConfiguration *configarray[], const int m
             fprintf(stderr,"failed to allocate memory\n");
             return -1;
         }
-        cfg_t *unit = cfg_getnsec(cfg, "unit", i);
+        cfg_t *unit = cfg_getnsec(cfg, "mqtt2rest_unit", i);
 
         INFO("UNIT: %s", cfg_title(unit));
         configarray[i]->unit_name = cfg_title(unit);
