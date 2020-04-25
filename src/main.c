@@ -43,18 +43,16 @@
 #include "rest2mqtt_unit.h"
 
 
-
-volatile bool running = true;
 static char *conf_file_name = PACKAGE_NAME".conf";
 static char *pid_file = "/var/lock/"PACKAGE_NAME;
 static int  pid_fd = -1;
 static char *app_name = PACKAGE_NAME;
 
-
 Configuration *config = NULL;
 #define MAX_UNIT_NUM  32
 
 
+static pthread_t threads[MAX_UNIT_NUM];
 
 
 /**
@@ -63,8 +61,13 @@ Configuration *config = NULL;
  */
 void handle_signal(int sig)
 {
-    if(sig == SIGINT) {
-     //   fprintf(log_stream, "Debug: stopping daemon ...\n");
+    // in this thread we simply ignore the
+    // SIGUSR1 signal sent below to each thread
+    if (sig == SIGUSR1)
+    {
+        return;
+    }
+    else if(sig == SIGINT) {
         /* Unlock and close lockfile */
         if(pid_fd != -1) {
             if(!lockf(pid_fd, F_ULOCK, 0)){
@@ -76,8 +79,13 @@ void handle_signal(int sig)
         if(pid_file != NULL) {
             unlink(pid_file);
         }
-        // notify the unit threads to exit
-        running = false;
+        // signal the unit threads to exit
+        int i = 0;
+        while (threads[i])
+        {
+            pthread_kill(threads[i],SIGUSR1);
+            i++;
+        }
     }
 }
 
@@ -202,8 +210,6 @@ print_version(void)
 
 
 
-
-
 int main(int argc, char *argv[])
 {
     static struct option long_options[] = {
@@ -247,6 +253,7 @@ int main(int argc, char *argv[])
     }
 
     signal(SIGINT, handle_signal);
+    signal(SIGUSR1, handle_signal);
 
     /* When daemonizing is requested at command line. */
     if(start_daemonized == 1) {
@@ -288,9 +295,13 @@ int main(int argc, char *argv[])
         ERROR("No units found. Please check configuration file %s",conf_file_name);
         return EXIT_FAILURE;
     }
+    else if((mqtt2rest_count + rest2mqtt_count) > MAX_UNIT_NUM)
+    {
+        ERROR("Max number of units/threads (%d) exceeded",MAX_UNIT_NUM);
+        return EXIT_FAILURE;
+    }
 
     // create a thread for each mqtt2rest unit
-    pthread_t threads[mqtt2rest_count];
     int threadcounter = 0;
     for (int i=0;i<mqtt2rest_count;i++)
     {
@@ -324,8 +335,9 @@ int main(int argc, char *argv[])
     DEBUG("Started %d units",threadcounter);
 
     // waiting for all of the threads to exit, if ever
-    for (int i = 0; i < threadcounter; i++) {
-        pthread_join(threads[i], 0);
+    for (int i = 0; i < threadcounter; i++) 
+    {
+        pthread_join(threads[i], NULL);
     }
 
     // freeing up the per-unit configs

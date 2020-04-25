@@ -31,7 +31,6 @@
 
 #include "configuration.h"
 #include "logging.h"
-extern bool running;
 
 static int
 rest_post(Mqtt2RestUnitConfiguration *config, const char *url, 
@@ -124,7 +123,7 @@ void *mqtt2rest_unit_run(void *configdata)
     nfds_t nfds = sizeof(pfd)/sizeof(struct pollfd);
     const int poll_timeout = config->mqtt_keepalive/2*1000;
 
-    while (running)
+    while (true)
     {
         if (!mqtt_client_connected(mqtt))
         {
@@ -135,15 +134,20 @@ void *mqtt2rest_unit_run(void *configdata)
             }
         }
         mqtt_client_get_pollfds(mqtt,pfd,&nfds);
-        if(poll(pfd, nfds, poll_timeout) < 0) {
-            FATAL("Poll() failed with <%s>, exiting",strerror(errno));
-            return NULL;
+        const int ret = poll(pfd, nfds, poll_timeout);
+        if(ret < 0)
+        {
+            if (errno != EINTR)  // we got SIGUSR1 so we halt
+            {
+                ERROR("Poll() failed with <%s>, exiting",strerror(errno));
+            }
+            break;
         }
         mqtt_client_loop(mqtt,pfd[0].revents & POLLIN,
                               pfd[0].revents & POLLOUT);
     }
 
 
-    DEBUG("Unit thread %s exiting...\n", unitconfig->unit_name);
+    INFO("Unit thread %s exiting...", unitconfig->unit_name);
     return NULL;
 }

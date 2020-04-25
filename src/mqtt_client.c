@@ -38,7 +38,8 @@ mqtt_cb_subscribe(struct mosquitto *mosq, void *userdata, int mid,
 {
     MqttClientConfiguration *config = userdata;
     assert(config != NULL);
-    INFO("Unit [%s]: Subscribed (mid: %d): %d", config->topic, mid, granted_qos[0]);
+    INFO("Unit [%s]: Subscribed to topic (mid: %d): %d",
+         config->label, config->topic, mid, granted_qos[0]);
     for(int i=1; i<qos_count; i++)
     {
         INFO("\t %d", granted_qos[i]);

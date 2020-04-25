@@ -38,9 +38,6 @@
 #include "mqtt_client.h"
 #include "utils.h"
 
-// from main.c
-extern bool running;
-
 
 typedef struct IncomingData
 {
@@ -183,10 +180,8 @@ void *rest2mqtt_unit_run(void *configdata)
             unitconfig->listen_port, 
             NULL, NULL,
             &answer_to_connection, (void*)mqtt,
-        //    MHD_OPTION_NOTIFY_COMPLETED, request_completed,
-        //    NULL,
             MHD_OPTION_END);
-    while(running)
+    while(true)
     {
         if (!mqtt_client_connected(mqtt))
         {
@@ -204,10 +199,14 @@ void *rest2mqtt_unit_run(void *configdata)
         nfds_t mqtt_pfd_size = 1;
         mqtt_client_get_pollfds(mqtt,mqtt_pfd,&mqtt_pfd_size);
         pfd[pfd_count++] = mqtt_pfd[0];
-        if(poll(pfd, pfd_count, poll_timeout) < 0)
+        const int ret = poll(pfd, pfd_count, poll_timeout);
+        if(ret < 0)
         {
-            FATAL("Poll() failed with <%s>, exiting",strerror(errno));
-            return NULL;
+            if (errno != EINTR)  // we got SIGUSR1 so we halt
+            {
+                ERROR("Poll() failed with <%s>, exiting",strerror(errno));
+            }
+            break;
         }
         MHD_run (daemon);
         mqtt_client_loop(mqtt,pfd[pfd_count-1].revents & POLLIN,
@@ -215,6 +214,7 @@ void *rest2mqtt_unit_run(void *configdata)
     }
     MHD_stop_daemon (daemon);
     mqtt_client_destroy(mqtt);
+    INFO("Unit thread %s exiting...", unitconfig->unit_name);
 
-    return 0;
+    return NULL;
 }
