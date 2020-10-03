@@ -32,7 +32,7 @@
 typedef enum {log_fatal, log_error, log_warning, log_info, log_debug} log_msg_type;
 
 
-void (*log_print)(log_msg_type, char*,int,const char *, const char *,...);
+extern void (*log_print)(log_msg_type, char*,int,const char *, const char *,...);
 
 
 /*
