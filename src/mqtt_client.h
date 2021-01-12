@@ -14,7 +14,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with mqrestt.  If not, see <https://www.gnu.org/licenses/>.
  *
- *   Copyright  Zoltan Gyarmati <zgyarmati@zgyarmati.de> 2020
+ *   Copyright  Zoltan Gyarmati <zgyarmati@zgyarmati.de> 2021
  *
  *   @file mqtt_client.h
  *   @brief The mqtt_client unit provides an abstraction
