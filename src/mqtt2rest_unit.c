@@ -32,6 +32,8 @@
 #include "configuration.h"
 #include "logging.h"
 
+#define URL_MAX_SIZE 2048
+
 static int
 rest_post(Mqtt2RestUnitConfiguration *config, const char *url, 
           const char *payload )
@@ -41,9 +43,8 @@ rest_post(Mqtt2RestUnitConfiguration *config, const char *url,
     int retval = 0;
     const int len = strlen(config->webservice_baseurl);
     DEBUG("len url: %d", strlen(url));
-    #define URL_MAX_SIZE 256
     char full_url[URL_MAX_SIZE];
-    strncpy(full_url,config->webservice_baseurl, URL_MAX_SIZE);
+    strncpy(full_url,config->webservice_baseurl, URL_MAX_SIZE-1);
     if(full_url[len-1] != '/'){
         DEBUG("Need to append a '/'");
         full_url[len] = '/';
