@@ -35,6 +35,8 @@
 
 #include <curl/curl.h>
 #include <mosquitto.h>
+#include <microhttpd.h>
+#include <confuse.h>
 
 #include <config.h>
 #include "configuration.h"
@@ -206,6 +208,8 @@ print_version(void)
     fprintf(stderr, "Libmosquitto version: %d.%d-%d (%d)\n",
             major, minor, revision, mosquitto_ver);
     fprintf(stderr, "Libcurl version: %s\n", curl_version());
+    fprintf(stderr, "Libmicrohttpd version: %s\n", MHD_get_version());
+    fprintf(stderr, "Libconfuse version: %s\n", confuse_version);
 }
 
 
