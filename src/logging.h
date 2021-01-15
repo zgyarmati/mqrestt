@@ -25,78 +25,58 @@
 #endif
 #include <string.h>
 
-
-
 /* the members indicating the type/severity of the log message
  */
-typedef enum {log_fatal, log_error, log_warning, log_info, log_debug} log_msg_type;
+typedef enum {
+    log_fatal,
+    log_error,
+    log_warning,
+    log_info,
+    log_debug
+} log_msg_type;
 
-
-extern void (*log_print)(log_msg_type, char*,int,const char *, const char *,...);
-
+extern void (*log_print)(log_msg_type, char *, int, const char *, const char *,
+                         ...);
 
 /*
  * The DEBUG macro is used to print normal debug messages.
  */
-#define DEBUG(...) log_print (log_debug, \
-        __FILE__, __LINE__, __PRETTY_FUNCTION__, \
-        __VA_ARGS__)
+#define DEBUG(...)                                                             \
+    log_print(log_debug, __FILE__, __LINE__, __PRETTY_FUNCTION__, __VA_ARGS__)
 /*
  * The LOG_INFO macro is used to print info messages
  */
-#define INFO(...) log_print (log_info, \
-        __FILE__, __LINE__, __PRETTY_FUNCTION__, \
-        __VA_ARGS__)
+#define INFO(...)                                                              \
+    log_print(log_info, __FILE__, __LINE__, __PRETTY_FUNCTION__, __VA_ARGS__)
 
 /*
  * The WARNING macro is used to print warnings.
  */
-#define WARNING(...) log_print (log_warning, \
-       __FILE__,__LINE__, __PRETTY_FUNCTION__, \
-        __VA_ARGS__)
+#define WARNING(...)                                                           \
+    log_print(log_warning, __FILE__, __LINE__, __PRETTY_FUNCTION__, __VA_ARGS__)
 /*
  * The L_ERROR macro is used to print errors.
  */
-#define ERROR(...) log_print (log_error, \
-        __FILE__, __LINE__, __PRETTY_FUNCTION__, \
-        __VA_ARGS__)
+#define ERROR(...)                                                             \
+    log_print(log_error, __FILE__, __LINE__, __PRETTY_FUNCTION__, __VA_ARGS__)
 /*
  * The FATAL macro is used to print fatal erros,
  * and also quits the application.
  */
-#define FATAL(...) log_print (log_fatal, \
-        __FILE__, __LINE__, __PRETTY_FUNCTION__, \
-        __VA_ARGS__)
-
-
-
+#define FATAL(...)                                                             \
+    log_print(log_fatal, __FILE__, __LINE__, __PRETTY_FUNCTION__, __VA_ARGS__)
 
 /* This function is the workhorse under the debug macros above.
  * Don't call it from outside, as it might change....
  */
-void log_print_file (
-        log_msg_type type,
-        char *file,
-        int  line,
-        const char *function,
-        const char *formatstring,
-        ...);
+void log_print_file(log_msg_type type, char *file, int line,
+                    const char *function, const char *formatstring, ...);
 
-void log_print_console (
-        log_msg_type type,
-        char *file,
-        int  line,
-        const char *function,
-        const char *formatstring,
-        ...);
+void log_print_console(log_msg_type type, char *file, int line,
+                       const char *function, const char *formatstring, ...);
 
-void log_print_syslog (
-        log_msg_type type,
-        char *file,
-        int  line,
-        const char *function,
-        const char *formatstring,
-        ...);
+void log_print_syslog(log_msg_type type, char *file, int line,
+                      const char *function, const char *formatstring, ...);
 
 /*  init logging functionality
  *  @param file: the file to log

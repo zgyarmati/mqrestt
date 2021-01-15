@@ -19,20 +19,17 @@
 
 #ifndef UTILS_H
 #define UTILS_H
-#include <stdlib.h>
-#include <sys/types.h>
-#include <stdbool.h>
 #include <errno.h>
 #include <limits.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <sys/types.h>
 
 bool parseInt(const char *str, int *val);
 
-void* safe_malloc(size_t n, unsigned long line);
+void *safe_malloc(size_t n, unsigned long line);
 #define SAFEMALLOC(n) safe_malloc(n, __LINE__)
-void* safe_realloc(void *ptr, size_t n, unsigned long line);
+void *safe_realloc(void *ptr, size_t n, unsigned long line);
 #define SAFEREALLOC(ptr, n) safe_realloc(ptr, n, __LINE__)
 
-
 #endif
-
-

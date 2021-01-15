@@ -21,62 +21,58 @@
 #ifndef CONFIGURATION_H
 #define CONFIGURATION_H
 
-typedef struct
-{
-    const char* appname;
-    const char* logtarget;
-    const char* logfile;
-    const char* logfacility;
-    const char* loglevel;
-    const char* mqtt_broker_host;
-    int         mqtt_broker_port;
-    int         mqtt_keepalive;
+typedef struct {
+    const char *appname;
+    const char *logtarget;
+    const char *logfile;
+    const char *logfacility;
+    const char *loglevel;
+    const char *mqtt_broker_host;
+    int mqtt_broker_port;
+    int mqtt_keepalive;
 
-    bool        mqtt_tls;
-    const char* mqtt_cafile;
-    const char* mqtt_capath;
-    const char* mqtt_certfile;
-    const char* mqtt_keyfile;
+    bool mqtt_tls;
+    const char *mqtt_cafile;
+    const char *mqtt_capath;
+    const char *mqtt_certfile;
+    const char *mqtt_keyfile;
 
-    bool        mqtt_user_pw;
-    const char* mqtt_user;
-    const char* mqtt_pw;
+    bool mqtt_user_pw;
+    const char *mqtt_user;
+    const char *mqtt_pw;
 
 } Configuration;
 
-
-/* This struct holds the configuration of 
+/* This struct holds the configuration of
  * one unit. It also has a reference to the common config items.
  * This struct passed to the worker threads
  */
-typedef struct
-{
-    const char* unit_name;
-    bool        enabled;
-    const char* webservice_baseurl;
-    const char* mqtt_topic;
+typedef struct {
+    const char *unit_name;
+    bool enabled;
+    const char *webservice_baseurl;
+    const char *mqtt_topic;
     Configuration *common_configuration;
 } Mqtt2RestUnitConfiguration;
 
-
-/* This struct holds the configuration of 
- * one REST to MQTT brifge unit. 
+/* This struct holds the configuration of
+ * one REST to MQTT brifge unit.
  * It also has a reference to the common config items.
  * This struct passed to the worker threads
  */
-typedef struct
-{
-    const char* unit_name;
-    bool        enabled;
-    int         listen_port;
-    const char* mqtt_topic_root;
+typedef struct {
+    const char *unit_name;
+    bool enabled;
+    int listen_port;
+    const char *mqtt_topic_root;
     Configuration *common_configuration;
 } Rest2MqttUnitConfiguration;
 
-
 Configuration *init_config(const char *filepath, bool dump);
-int get_mqtt2rest_unitconfigs(Mqtt2RestUnitConfiguration *configarray[],  const int max_size);
-int get_rest2mqtt_unitconfigs(Rest2MqttUnitConfiguration *configarray[],  const int max_size);
+int get_mqtt2rest_unitconfigs(Mqtt2RestUnitConfiguration *configarray[],
+                              const int max_size);
+int get_rest2mqtt_unitconfigs(Rest2MqttUnitConfiguration *configarray[],
+                              const int max_size);
 void free_config();
 
 #endif

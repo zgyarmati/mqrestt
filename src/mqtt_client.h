@@ -24,33 +24,30 @@
  */
 #ifndef MQTT_CLIENT_H
 #define MQTT_CLIENT_H
-#include <sys/types.h>
-#include <string.h>
-#include <unistd.h>
 #include <stdbool.h>
+#include <string.h>
 #include <sys/poll.h>
+#include <sys/types.h>
+#include <unistd.h>
 
+typedef struct {
+    const char *label;
+    const char *topic;
+    const char *broker_host;
+    int broker_port;
+    int keepalive;
 
+    bool tls_enabled;
+    const char *cafile;
+    const char *capath;
+    const char *certfile;
+    const char *keyfile;
 
-typedef struct
-{
-    const char* label;
-    const char* topic;
-    const char* broker_host;
-    int         broker_port;
-    int         keepalive;
-
-    bool        tls_enabled;
-    const char* cafile;
-    const char* capath;
-    const char* certfile;
-    const char* keyfile;
-
-    bool        user_pw_auth_enabled;
-    const char* user;
-    const char* pw;
+    bool user_pw_auth_enabled;
+    const char *user;
+    const char *pw;
     void *callback_context;
-    void (*msg_callback)(const char* topic, const char* msg, void *ctx);
+    void (*msg_callback)(const char *topic, const char *msg, void *ctx);
 
 } MqttClientConfiguration;
 
@@ -60,9 +57,12 @@ struct MqttClientHandle *mqtt_client_init(MqttClientConfiguration *config);
 bool mqtt_client_connect(struct MqttClientHandle *h);
 bool mqtt_client_connected(struct MqttClientHandle *h);
 bool mqtt_client_reconnect(struct MqttClientHandle *h);
-bool mqtt_client_publish(struct MqttClientHandle *h, const char *topic, const char *msg,int qos);
-nfds_t mqtt_client_get_pollfds(struct MqttClientHandle *h, struct pollfd *pfds, nfds_t *count);
-void mqtt_client_loop(struct MqttClientHandle *h,const bool read, const bool write);
+bool mqtt_client_publish(struct MqttClientHandle *h, const char *topic,
+                         const char *msg, int qos);
+nfds_t mqtt_client_get_pollfds(struct MqttClientHandle *h, struct pollfd *pfds,
+                               nfds_t *count);
+void mqtt_client_loop(struct MqttClientHandle *h, const bool read,
+                      const bool write);
 void mqtt_client_destroy(struct MqttClientHandle *h);
 
 #endif

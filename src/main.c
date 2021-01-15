@@ -17,45 +17,42 @@
  *   Copyright  Zoltan Gyarmati <zgyarmati@zgyarmati.de> 2021
  */
 
+#include <assert.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <getopt.h>
+#include <math.h>
+#include <pthread.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <syslog.h>
-#include <signal.h>
-#include <getopt.h>
 #include <string.h>
-#include <fcntl.h>
+#include <sys/poll.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <errno.h>
-#include <math.h>
-#include <assert.h>
-#include <sys/poll.h>
-#include <pthread.h>
+#include <syslog.h>
+#include <unistd.h>
 
-#include <curl/curl.h>
-#include <mosquitto.h>
-#include <microhttpd.h>
 #include <confuse.h>
+#include <curl/curl.h>
+#include <microhttpd.h>
+#include <mosquitto.h>
 
-#include <config.h>
 #include "configuration.h"
 #include "logging.h"
 #include "mqtt2rest_unit.h"
 #include "rest2mqtt_unit.h"
+#include <config.h>
 
-
-static char *conf_file_name = PACKAGE_NAME".conf";
-static char *pid_file = "/var/lock/"PACKAGE_NAME;
-static int  pid_fd = -1;
+static char *conf_file_name = PACKAGE_NAME ".conf";
+static char *pid_file = "/var/lock/" PACKAGE_NAME;
+static int pid_fd = -1;
 static char *app_name = PACKAGE_NAME;
 
 Configuration *config = NULL;
-#define MAX_UNIT_NUM  32
-
+#define MAX_UNIT_NUM 32
 
 static pthread_t threads[MAX_UNIT_NUM];
-
 
 /**
  * \brief   Callback function for handling signals.
@@ -65,32 +62,28 @@ void handle_signal(int sig)
 {
     // in this thread we simply ignore the
     // SIGUSR1 signal sent below to each thread
-    if (sig == SIGUSR1)
-    {
+    if (sig == SIGUSR1) {
         return;
-    }
-    else if(sig == SIGINT) {
+    } else if (sig == SIGINT) {
         /* Unlock and close lockfile */
-        if(pid_fd != -1) {
-            if(!lockf(pid_fd, F_ULOCK, 0)){
-                fprintf(stderr,"Failed to unlock lockfile\n");
+        if (pid_fd != -1) {
+            if (!lockf(pid_fd, F_ULOCK, 0)) {
+                fprintf(stderr, "Failed to unlock lockfile\n");
             }
             close(pid_fd);
         }
         /* Try to delete lockfile */
-        if(pid_file != NULL) {
+        if (pid_file != NULL) {
             unlink(pid_file);
         }
         // signal the unit threads to exit
         int i = 0;
-        while (threads[i])
-        {
-            pthread_kill(threads[i],SIGUSR1);
+        while (threads[i]) {
+            pthread_kill(threads[i], SIGUSR1);
             i++;
         }
     }
 }
-
 
 /**
  * \brief This function will daemonize this app
@@ -104,17 +97,17 @@ static void daemonize()
     pid = fork();
 
     /* An error occurred */
-    if(pid < 0) {
+    if (pid < 0) {
         exit(EXIT_FAILURE);
     }
 
     /* Success: Let the parent terminate */
-    if(pid > 0) {
+    if (pid > 0) {
         exit(EXIT_SUCCESS);
     }
 
     /* On success: The child process becomes session leader */
-    if(setsid() < 0) {
+    if (setsid() < 0) {
         exit(EXIT_FAILURE);
     }
 
@@ -125,29 +118,27 @@ static void daemonize()
     pid = fork();
 
     /* An error occurred */
-    if(pid < 0) {
+    if (pid < 0) {
         exit(EXIT_FAILURE);
     }
 
     /* Success: Let the parent terminate */
-    if(pid > 0) {
+    if (pid > 0) {
         exit(EXIT_SUCCESS);
     }
-
 
     /* Set new file permissions */
     umask(0);
 
     /* Change the working directory to the root directory */
     /* or another appropriated directory */
-    if(chdir("/")){
-        fprintf(stderr,"Failed to cd to /, exiting");
+    if (chdir("/")) {
+        fprintf(stderr, "Failed to cd to /, exiting");
         exit(-1);
     }
 
     /* Close all open file descriptors */
-    for(fd = sysconf(_SC_OPEN_MAX); fd > 0; fd--)
-    {
+    for (fd = sysconf(_SC_OPEN_MAX); fd > 0; fd--) {
         close(fd);
     }
 
@@ -157,25 +148,22 @@ static void daemonize()
     stderr = fopen("/dev/null", "w+");
 
     /* Try to write PID of daemon to lockfile */
-    if(pid_file!= NULL)
-    {
+    if (pid_file != NULL) {
         char str[256];
-        pid_fd = open(pid_file, O_RDWR|O_CREAT, 0640);
-        if(pid_fd < 0)
-        {
+        pid_fd = open(pid_file, O_RDWR | O_CREAT, 0640);
+        if (pid_fd < 0) {
             /* Can't open lockfile */
             exit(EXIT_FAILURE);
         }
-        if(lockf(pid_fd, F_TLOCK, 0) < 0)
-        {
+        if (lockf(pid_fd, F_TLOCK, 0) < 0) {
             /* Can't lock file */
             exit(EXIT_FAILURE);
         }
         /* Get current PID */
         sprintf(str, "%d\n", getpid());
         /* Write PID to lockfile */
-        if(!(write(pid_fd, str, strlen(str)))){
-            fprintf(stderr,"Failed to writen pid into lockfile, exiting...");
+        if (!(write(pid_fd, str, strlen(str)))) {
+            fprintf(stderr, "Failed to writen pid into lockfile, exiting...");
             exit(-1);
         }
     }
@@ -184,35 +172,34 @@ static void daemonize()
 /**
  * \brief Print help for this application
  */
-void
-print_help(void)
+void print_help(void)
 {
-    fprintf(stderr,"\nUsage: %s [OPTIONS]\n\n", app_name);
-    fprintf(stderr,"Options:\n");
-    fprintf(stderr,"   -h --help                 Print this help\n");
-    fprintf(stderr,"   -v --version              Print version info\n");
-    fprintf(stderr,"   -c --configfile filename  Read configuration from the file\n");
-    fprintf(stderr,"   -d --daemon               Daemonize this application\n");
-    fprintf(stderr,"   -p --dump                 Dump the parsed config to stderr and continue running\n");
-    fprintf(stderr,"\n");
+    fprintf(stderr, "\nUsage: %s [OPTIONS]\n\n", app_name);
+    fprintf(stderr, "Options:\n");
+    fprintf(stderr, "   -h --help                 Print this help\n");
+    fprintf(stderr, "   -v --version              Print version info\n");
+    fprintf(stderr,
+            "   -c --configfile filename  Read configuration from the file\n");
+    fprintf(stderr,
+            "   -d --daemon               Daemonize this application\n");
+    fprintf(stderr, "   -p --dump                 Dump the parsed config to "
+                    "stderr and continue running\n");
+    fprintf(stderr, "\n");
 }
 
-void
-print_version(void)
+void print_version(void)
 {
     int major;
     int minor;
     int revision;
-    fprintf(stderr,PACKAGE_NAME" version: %s\n", PACKAGE_VERSION);
-    int mosquitto_ver = mosquitto_lib_version(&major,&minor,&revision);
-    fprintf(stderr, "Libmosquitto version: %d.%d-%d (%d)\n",
-            major, minor, revision, mosquitto_ver);
+    fprintf(stderr, PACKAGE_NAME " version: %s\n", PACKAGE_VERSION);
+    int mosquitto_ver = mosquitto_lib_version(&major, &minor, &revision);
+    fprintf(stderr, "Libmosquitto version: %d.%d-%d (%d)\n", major, minor,
+            revision, mosquitto_ver);
     fprintf(stderr, "Libcurl version: %s\n", curl_version());
     fprintf(stderr, "Libmicrohttpd version: %s\n", MHD_get_version());
     fprintf(stderr, "Libconfuse version: %s\n", confuse_version);
 }
-
-
 
 int main(int argc, char *argv[])
 {
@@ -222,8 +209,7 @@ int main(int argc, char *argv[])
         {"version", no_argument, 0, 'v'},
         {"daemon", no_argument, 0, 'd'},
         {"dump", no_argument, 0, 'p'},
-        {NULL, 0, 0, 0}
-    };
+        {NULL, 0, 0, 0}};
     int value, option_index = 0;
     int start_daemonized = 0;
     bool dump_config = false;
@@ -231,28 +217,29 @@ int main(int argc, char *argv[])
     app_name = argv[0];
 
     /* Try to process all command line arguments */
-    while( (value = getopt_long(argc, argv, "c:dhvp", long_options, &option_index)) != -1) {
-        switch(value) {
-            case 'c':
-                conf_file_name = strdup(optarg);
-                break;
-            case 'd':
-                start_daemonized = 1;
-                break;
-            case 'p':
-                dump_config = true;
-                break;
-            case 'h':
-                print_help();
-                return EXIT_SUCCESS;
-            case 'v':
-                print_version();
-                return EXIT_SUCCESS;
-            case '?':
-                print_help();
-                return EXIT_FAILURE;
-            default:
-                break;
+    while ((value = getopt_long(argc, argv, "c:dhvp", long_options,
+                                &option_index)) != -1) {
+        switch (value) {
+        case 'c':
+            conf_file_name = strdup(optarg);
+            break;
+        case 'd':
+            start_daemonized = 1;
+            break;
+        case 'p':
+            dump_config = true;
+            break;
+        case 'h':
+            print_help();
+            return EXIT_SUCCESS;
+        case 'v':
+            print_version();
+            return EXIT_SUCCESS;
+        case '?':
+            print_help();
+            return EXIT_FAILURE;
+        default:
+            break;
         }
     }
 
@@ -260,21 +247,23 @@ int main(int argc, char *argv[])
     signal(SIGUSR1, handle_signal);
 
     /* When daemonizing is requested at command line. */
-    if(start_daemonized == 1) {
+    if (start_daemonized == 1) {
         daemonize();
     }
     config = init_config(conf_file_name, dump_config);
-    if (config == NULL){
+    if (config == NULL) {
         fprintf(stderr, "CONFIG ERROR in %s, EXITING!\n", conf_file_name);
         exit(EXIT_FAILURE);
     }
-    if(0 != log_init(config->loglevel, config->logtarget, config->logfile,
-              config->logfacility, 0)){
-        fprintf(stderr, "Failed to init logging from config file: %s, exiting\n",
-                        conf_file_name);
+    if (0 != log_init(config->loglevel, config->logtarget, config->logfile,
+                      config->logfacility, 0)) {
+        fprintf(stderr,
+                "Failed to init logging from config file: %s, exiting\n",
+                conf_file_name);
         return EXIT_FAILURE;
     }
-    INFO(PACKAGE_NAME" started, pid: %d, config file: %s", getpid(),conf_file_name);
+    INFO(PACKAGE_NAME " started, pid: %d, config file: %s", getpid(),
+         conf_file_name);
 
     // we need to call this only once, and it's not thread
     // safe, so we do it here
@@ -287,70 +276,65 @@ int main(int argc, char *argv[])
 
     int rest2mqtt_count = MAX_UNIT_NUM;
     Rest2MqttUnitConfiguration *rest2mqtt_unit_configs[MAX_UNIT_NUM] = {NULL};
-    rest2mqtt_count = get_rest2mqtt_unitconfigs(rest2mqtt_unit_configs, rest2mqtt_count);
+    rest2mqtt_count =
+        get_rest2mqtt_unitconfigs(rest2mqtt_unit_configs, rest2mqtt_count);
 
-    if (mqtt2rest_count < 0 || rest2mqtt_count < 0)
-    {
-        FATAL("Failed to init unit configs, check config file:",conf_file_name);
+    if (mqtt2rest_count < 0 || rest2mqtt_count < 0) {
+        FATAL("Failed to init unit configs, check config file:",
+              conf_file_name);
         return EXIT_FAILURE;
     }
-    if ((mqtt2rest_count + rest2mqtt_count) == 0)
-    {
-        ERROR("No units found. Please check configuration file %s",conf_file_name);
+    if ((mqtt2rest_count + rest2mqtt_count) == 0) {
+        ERROR("No units found. Please check configuration file %s",
+              conf_file_name);
         return EXIT_FAILURE;
-    }
-    else if((mqtt2rest_count + rest2mqtt_count) > MAX_UNIT_NUM)
-    {
-        ERROR("Max number of units/threads (%d) exceeded",MAX_UNIT_NUM);
+    } else if ((mqtt2rest_count + rest2mqtt_count) > MAX_UNIT_NUM) {
+        ERROR("Max number of units/threads (%d) exceeded", MAX_UNIT_NUM);
         return EXIT_FAILURE;
     }
 
     // create a thread for each mqtt2rest unit
     int threadcounter = 0;
-    for (int i=0;i<mqtt2rest_count;i++)
-    {
-        if (!unit_configs[i]->enabled){
+    for (int i = 0; i < mqtt2rest_count; i++) {
+        if (!unit_configs[i]->enabled) {
             continue;
         }
         // setting the common config in each unit configuration
         unit_configs[i]->common_configuration = config;
-        int ret = pthread_create(&threads[threadcounter++], NULL, mqtt2rest_unit_run, (void*) unit_configs[i]);
-        if(ret) {
-            fprintf(stderr,"Error - pthread_create() return code: %d\n",ret);
+        int ret = pthread_create(&threads[threadcounter++], NULL,
+                                 mqtt2rest_unit_run, (void *)unit_configs[i]);
+        if (ret) {
+            fprintf(stderr, "Error - pthread_create() return code: %d\n", ret);
             exit(EXIT_FAILURE);
         }
     }
 
-
     // create a thread for each rest2mqtt unit
-    for (int i=0;i<rest2mqtt_count;i++)
-    {
-        if (!rest2mqtt_unit_configs[i]->enabled)
-        {
+    for (int i = 0; i < rest2mqtt_count; i++) {
+        if (!rest2mqtt_unit_configs[i]->enabled) {
             continue;
         }
         rest2mqtt_unit_configs[i]->common_configuration = config;
-        int ret = pthread_create(&threads[threadcounter++], NULL, rest2mqtt_unit_run, (void*) rest2mqtt_unit_configs[i]);
-        if(ret) {
-            fprintf(stderr,"Error - pthread_create() return code: %d\n",ret);
+        int ret =
+            pthread_create(&threads[threadcounter++], NULL, rest2mqtt_unit_run,
+                           (void *)rest2mqtt_unit_configs[i]);
+        if (ret) {
+            fprintf(stderr, "Error - pthread_create() return code: %d\n", ret);
             exit(EXIT_FAILURE);
         }
     }
-    DEBUG("Started %d units",threadcounter);
+    DEBUG("Started %d units", threadcounter);
 
     // waiting for all of the threads to exit, if ever
-    for (int i = 0; i < threadcounter; i++) 
-    {
+    for (int i = 0; i < threadcounter; i++) {
         pthread_join(threads[i], NULL);
     }
 
     // freeing up the per-unit configs
-    for (int i=0; i < mqtt2rest_count; i++)
-    {
+    for (int i = 0; i < mqtt2rest_count; i++) {
         free(unit_configs[i]);
     }
-    for (int i=0; i < rest2mqtt_count; i++)
-    {
+    for (int i = 0; i < rest2mqtt_count; i++) {
         free(rest2mqtt_unit_configs[i]);
     }
     // free up the main config

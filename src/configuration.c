@@ -17,24 +17,23 @@
  *   Copyright  Zoltan Gyarmati <zgyarmati@zgyarmati.de> 2021
  */
 
-
 #include "configuration.h"
-#include <stdio.h>
 #include <errno.h>
-#include <string.h>
 #include <signal.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
+#include <assert.h>
 #include <config.h>
 #include <confuse.h>
-#include <assert.h>
 
 #include "logging.h"
 
-#define INISECTION PACKAGE_NAME":"
+#define INISECTION PACKAGE_NAME ":"
 
+cfg_t *cfg = NULL;
 
-cfg_t *cfg = NULL;;
 /*
  * parses the config file, and returns a pointer to a
  * dynamically allocated instance of the
@@ -44,29 +43,22 @@ cfg_t *cfg = NULL;;
  * If the return value is NULL, the parsing was unsuccesfull,
  * and the error supposed to be printed on stderr
  */
-Configuration *
-init_config(const char *filepath, bool dump)
+Configuration *init_config(const char *filepath, bool dump)
 {
     Configuration *retval = malloc(sizeof(Configuration));
 
-    static cfg_opt_t mqtt2rest_unit_opts[] =
-    {
+    static cfg_opt_t mqtt2rest_unit_opts[] = {
         CFG_STR("webservice_baseurl", "localhost", CFGF_NONE),
         CFG_STR("mqtt_topic", "default_topic", CFGF_NONE),
-        CFG_BOOL("enabled", true, CFGF_NONE),
-        CFG_END()
-    };
+        CFG_BOOL("enabled", true, CFGF_NONE), CFG_END()};
 
-    static cfg_opt_t rest2mqtt_unit_opts[] =
-    {
+    static cfg_opt_t rest2mqtt_unit_opts[] = {
         CFG_INT("listen_port", 8888, CFGF_NONE),
         CFG_STR("mqtt_topic_root", "default_topic", CFGF_NONE),
-        CFG_BOOL("enabled", true, CFGF_NONE),
-        CFG_END()
-    };
+        CFG_BOOL("enabled", true, CFGF_NONE), CFG_END()};
 
     cfg_opt_t opts[] = {
-        //logging
+        // logging
         CFG_STR("logtarget", "stdout", CFGF_NONE),
         CFG_STR("logfile", "mgrestt.log", CFGF_NONE),
         CFG_STR("logfacility", "local0", CFGF_NONE),
@@ -88,90 +80,82 @@ init_config(const char *filepath, bool dump)
 
         CFG_SEC("mqtt2rest_unit", mqtt2rest_unit_opts, CFGF_MULTI | CFGF_TITLE),
         CFG_SEC("rest2mqtt_unit", rest2mqtt_unit_opts, CFGF_MULTI | CFGF_TITLE),
-        CFG_END()
-    };
-
+        CFG_END()};
 
     cfg = cfg_init(opts, 0);
     cfg_parse(cfg, filepath);
-
 
     if (cfg == NULL) {
         fprintf(stderr, "cannot parse file: %s\n", filepath);
         free_config();
         return NULL;
     }
-    if (dump)
-    {
-        fprintf(stderr,"Config dump from file: %s\n\n",filepath);
+    if (dump) {
+        fprintf(stderr, "Config dump from file: %s\n\n", filepath);
         cfg_print(cfg, stderr);
-        fprintf(stderr,"\n\n");
+        fprintf(stderr, "\n\n");
     }
     retval->appname = INISECTION;
-    //logging
-    retval->logtarget = cfg_getstr(cfg,"logtarget");
-    retval->logfile = cfg_getstr(cfg,"logfile");
-    retval->logfacility = cfg_getstr(cfg,"logfacility");
-    retval->loglevel = cfg_getstr(cfg,"loglevel");
-    //application
-   
-    //MQTT
-    retval->mqtt_broker_host = cfg_getstr(cfg,"mqtt_broker_host");
-    retval->mqtt_broker_port = cfg_getint(cfg,"mqtt_broker_port");
-    retval->mqtt_keepalive = cfg_getint(cfg,"mqtt_keepalive");
+    // logging
+    retval->logtarget = cfg_getstr(cfg, "logtarget");
+    retval->logfile = cfg_getstr(cfg, "logfile");
+    retval->logfacility = cfg_getstr(cfg, "logfacility");
+    retval->loglevel = cfg_getstr(cfg, "loglevel");
+    // application
 
-    retval->mqtt_tls = cfg_getbool(cfg,"mqtt_tls");
-    retval->mqtt_cafile = cfg_getstr(cfg,"mqtt_cafile");
-    retval->mqtt_capath = cfg_getstr(cfg,"mqtt_capath");
-    retval->mqtt_certfile = cfg_getstr(cfg,"mqtt_certfile");
-    retval->mqtt_keyfile = cfg_getstr(cfg,"mqtt_keyfile");
+    // MQTT
+    retval->mqtt_broker_host = cfg_getstr(cfg, "mqtt_broker_host");
+    retval->mqtt_broker_port = cfg_getint(cfg, "mqtt_broker_port");
+    retval->mqtt_keepalive = cfg_getint(cfg, "mqtt_keepalive");
 
-    if(retval->mqtt_cafile && !strlen(retval->mqtt_cafile)){
+    retval->mqtt_tls = cfg_getbool(cfg, "mqtt_tls");
+    retval->mqtt_cafile = cfg_getstr(cfg, "mqtt_cafile");
+    retval->mqtt_capath = cfg_getstr(cfg, "mqtt_capath");
+    retval->mqtt_certfile = cfg_getstr(cfg, "mqtt_certfile");
+    retval->mqtt_keyfile = cfg_getstr(cfg, "mqtt_keyfile");
+
+    if (retval->mqtt_cafile && !strlen(retval->mqtt_cafile)) {
         retval->mqtt_cafile = NULL;
     }
 
-    if(retval->mqtt_capath && !strlen(retval->mqtt_capath)){
+    if (retval->mqtt_capath && !strlen(retval->mqtt_capath)) {
         retval->mqtt_capath = NULL;
     }
 
-    if(retval->mqtt_certfile && !strlen(retval->mqtt_certfile)){
+    if (retval->mqtt_certfile && !strlen(retval->mqtt_certfile)) {
         retval->mqtt_certfile = NULL;
     }
 
-    if(retval->mqtt_keyfile && !strlen(retval->mqtt_keyfile)){
+    if (retval->mqtt_keyfile && !strlen(retval->mqtt_keyfile)) {
         retval->mqtt_keyfile = NULL;
     }
 
-    if(retval->mqtt_tls &&
-       !retval->mqtt_cafile &&
-       !retval->mqtt_capath) {
-        fprintf(stderr,"config error: either mqtt_cafile or mqtt_capath need to be set!\n");
+    if (retval->mqtt_tls && !retval->mqtt_cafile && !retval->mqtt_capath) {
+        fprintf(stderr, "config error: either mqtt_cafile or mqtt_capath need "
+                        "to be set!\n");
         free_config();
         return NULL;
     }
-    retval->mqtt_user_pw = cfg_getbool(cfg,"mqtt_user_pw");
+    retval->mqtt_user_pw = cfg_getbool(cfg, "mqtt_user_pw");
 
-    retval->mqtt_user = cfg_getstr(cfg,"mqtt_user");
-    retval->mqtt_pw = cfg_getstr(cfg,"mqtt_pw");
+    retval->mqtt_user = cfg_getstr(cfg, "mqtt_user");
+    retval->mqtt_pw = cfg_getstr(cfg, "mqtt_pw");
     return retval;
 }
 
-int
-get_mqtt2rest_unitconfigs(Mqtt2RestUnitConfiguration *configarray[], const int max_size)
+int get_mqtt2rest_unitconfigs(Mqtt2RestUnitConfiguration *configarray[],
+                              const int max_size)
 {
     assert(cfg != NULL);
-    const int unit_count = cfg_size(cfg,"mqtt2rest_unit");
-    if (max_size < unit_count)
-    {
-        fprintf(stderr,"config error: configarray too small\n");
+    const int unit_count = cfg_size(cfg, "mqtt2rest_unit");
+    if (max_size < unit_count) {
+        fprintf(stderr, "config error: configarray too small\n");
         return -1;
     }
-    for(int i = 0; i < unit_count; i++)
-    {
-        configarray[i] = malloc (sizeof(Mqtt2RestUnitConfiguration));
-        if (configarray[i] == NULL)
-        {
-            fprintf(stderr,"failed to allocate memory\n");
+    for (int i = 0; i < unit_count; i++) {
+        configarray[i] = malloc(sizeof(Mqtt2RestUnitConfiguration));
+        if (configarray[i] == NULL) {
+            fprintf(stderr, "failed to allocate memory\n");
             return -1;
         }
         cfg_t *unit = cfg_getnsec(cfg, "mqtt2rest_unit", i);
@@ -180,32 +164,29 @@ get_mqtt2rest_unitconfigs(Mqtt2RestUnitConfiguration *configarray[], const int m
         configarray[i]->unit_name = cfg_title(unit);
 
         INFO("\tURL: %s", cfg_getstr(unit, "webservice_baseurl"));
-        configarray[i]->webservice_baseurl = cfg_getstr(unit, "webservice_baseurl");
+        configarray[i]->webservice_baseurl =
+            cfg_getstr(unit, "webservice_baseurl");
 
         INFO("\tTOPIC: %s", cfg_getstr(unit, "mqtt_topic"));
         configarray[i]->mqtt_topic = cfg_getstr(unit, "mqtt_topic");
-        configarray[i]->enabled = cfg_getbool(unit,"enabled");
+        configarray[i]->enabled = cfg_getbool(unit, "enabled");
     }
     return unit_count;
 }
 
-int
-get_rest2mqtt_unitconfigs(Rest2MqttUnitConfiguration *configarray[],
-                          const int max_size)
+int get_rest2mqtt_unitconfigs(Rest2MqttUnitConfiguration *configarray[],
+                              const int max_size)
 {
     assert(cfg != NULL);
-    const int unit_count = cfg_size(cfg,"rest2mqtt_unit");
-    if (max_size < unit_count)
-    {
-        fprintf(stderr,"config error: configarray too small\n");
+    const int unit_count = cfg_size(cfg, "rest2mqtt_unit");
+    if (max_size < unit_count) {
+        fprintf(stderr, "config error: configarray too small\n");
         return -1;
     }
-    for(int i = 0; i < unit_count; i++)
-    {
-        configarray[i] = malloc (sizeof(Rest2MqttUnitConfiguration));
-        if (configarray[i] == NULL)
-        {
-            fprintf(stderr,"failed to allocate memory\n");
+    for (int i = 0; i < unit_count; i++) {
+        configarray[i] = malloc(sizeof(Rest2MqttUnitConfiguration));
+        if (configarray[i] == NULL) {
+            fprintf(stderr, "failed to allocate memory\n");
             return -1;
         }
         cfg_t *unit = cfg_getnsec(cfg, "rest2mqtt_unit", i);
@@ -218,7 +199,7 @@ get_rest2mqtt_unitconfigs(Rest2MqttUnitConfiguration *configarray[],
 
         configarray[i]->mqtt_topic_root = cfg_getstr(unit, "mqtt_topic_root");
         INFO("\tTOPIC ROOT: %s", configarray[i]->mqtt_topic_root);
-        configarray[i]->enabled = cfg_getbool(unit,"enabled");
+        configarray[i]->enabled = cfg_getbool(unit, "enabled");
     }
     return unit_count;
 }

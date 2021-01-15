@@ -20,9 +20,7 @@
 #include "utils.h"
 #include "stdio.h"
 
-
-bool
-parseInt(const char *str, int *val)
+bool parseInt(const char *str, int *val)
 {
     char *temp;
     bool rc = true;
@@ -36,25 +34,23 @@ parseInt(const char *str, int *val)
     return rc;
 }
 
-void* safe_malloc(size_t n, unsigned long line)
+void *safe_malloc(size_t n, unsigned long line)
 {
-    void* p = malloc(n);
-    if (!p)
-    {
-        fprintf(stderr, "[%s:%lu]Out of memory(%lu bytes)\n",
-                __FILE__, line, (unsigned long)n);
+    void *p = malloc(n);
+    if (!p) {
+        fprintf(stderr, "[%s:%lu]Out of memory(%lu bytes)\n", __FILE__, line,
+                (unsigned long)n);
         exit(EXIT_FAILURE);
     }
     return p;
 }
 
-void* safe_realloc(void *ptr, size_t n, unsigned long line)
+void *safe_realloc(void *ptr, size_t n, unsigned long line)
 {
-    void* p = realloc(ptr,n);
-    if (!p)
-    {
-        fprintf(stderr, "[%s:%lu]Out of memory(%lu bytes)\n",
-                __FILE__, line, (unsigned long)n);
+    void *p = realloc(ptr, n);
+    if (!p) {
+        fprintf(stderr, "[%s:%lu]Out of memory(%lu bytes)\n", __FILE__, line,
+                (unsigned long)n);
         exit(EXIT_FAILURE);
     }
     return p;
