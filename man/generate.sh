@@ -10,5 +10,6 @@ MANNAME=mqrestt
 
 a2x -fpdf ${MANNAME}.asciidoc -a revdate="`date`" -v -v
 a2x -f manpage ${MANNAME}.asciidoc -v -v
+#a2x -f text ${MANNAME}.asciidoc -v -v
 
 

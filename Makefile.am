@@ -7,4 +7,5 @@ dist-hook:
 	( cd "$(srcdir)" && git log --pretty=format:"%ad %s" --date=iso ) > "$(distdir)/ChangeLog"; \
 	fi
 
-sysconf_DATA = mqrestt.conf
+sysconf_DATA = $(top_srcdir)/doc/mqrestt.conf
+

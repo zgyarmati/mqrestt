@@ -20,3 +20,11 @@ Bookmarks
 https://iot.stackexchange.com/questions/3763/restapi-and-mqtt-broker
 
 https://mosquitto.org/api/files/mosquitto-h.html
+
+
+Hacking
+========
+
+Development dependencies (on Debian/Ubuntu): autoconf-archive libcurl4-openssl-dev libmosquitto-dev libconfuse-dev libconfuse-dev
+
+
