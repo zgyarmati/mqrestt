@@ -216,6 +216,13 @@ int main(int argc, char *argv[])
 
     app_name = argv[0];
 
+    // try to get the config file path from the env
+    char *s = getenv("MQRESTT_CONFIG");
+    if (s != NULL) {
+        fprintf(stderr, "Getting config path from env, %s\n", s);
+        conf_file_name = s;
+    }
+
     /* Try to process all command line arguments */
     while ((value = getopt_long(argc, argv, "c:dhvp", long_options,
                                 &option_index)) != -1) {
