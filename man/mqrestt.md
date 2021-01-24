@@ -1,17 +1,14 @@
-mqrestt(1)
-============
-:doctype: manpage
-
+% mqrestt(1)
 
 NAME
 ----
-mqrestt - daemon to translate MQTT messages to REST POST calls
+**mqrestt** - daemon to translate MQTT messages to REST POST calls
           and vica versa
 
 
 SYNOPSIS
 --------
-*mqrestt* ['OPTIONS']
+**mqrestt** ['OPTIONS']
 
 
 DESCRIPTION

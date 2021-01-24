@@ -41,11 +41,11 @@ PKG_CHECK_MODULES([libconfuse], [libconfuse])
 PKG_CHECK_MODULES([libmicrohttpd], [libmicrohttpd])
 
 # check for doc generating tools
-AC_CHECK_PROGS([A2X], [a2x])
-if test -z "$A2X";then
-    AC_MSG_WARN([asciidoc a2x not found - continuing without building man pages])
+AC_CHECK_PROGS([PANDOC], [pandoc])
+if test -z "$PANDOC";then
+    AC_MSG_WARN([pandoc not found - continuing without building man pages])
 fi
-AM_CONDITIONAL([HAVE_A2X], [test -n "$A2X"])
+AM_CONDITIONAL([HAVE_PANDOC], [test -n "$PANDOC"])
 
 AC_CONFIG_FILES([Makefile
                  man/Makefile

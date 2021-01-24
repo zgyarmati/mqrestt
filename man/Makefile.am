@@ -1,15 +1,19 @@
-EXTRA_DIST = mqrestt.asciidoc
+EXTRA_DIST = mqrestt.md
 
-if HAVE_A2X
+if HAVE_PANDOC
 dir = $(top_srcdir)/man
+
+MANNAME=mqrestt
 
 man_MANS = mqrestt.1
 
 mqrestt.1:
-	$(A2X) -k -f manpage mqrestt.asciidoc
+#	$(PANDOC) -k -f manpage mqrestt.asciidoc
+	$(PANDOC) --standalone --to man $(MANNAME).md -o $(MANNAME).1
 
 mqrestt.pdf: mqrestt.1
-	$(A2X) -f pdf mqrestt.asciidoc -a revdate="`date`" -v -v
+#	$(PANDOC) -f pdf mqrestt.asciidoc -a revdate="`date`" -v -v
+	$(PANDOC) --standalone  $(MANNAME).md -t latex  -o $(MANNAME).pdf
 
 CLEANFILES = mqrestt.1 mqrestt.pdf
 
